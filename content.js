@@ -113,6 +113,12 @@ function extractLinkedInJob() {
       }
     }
     
+    // Validate we got at least job title or company
+    if (!job.jobTitle && !job.companyName) {
+      console.warn('[IronCV] Could not extract job details - LinkedIn UI may have changed');
+      return null;
+    }
+    
     console.log('[IronCV] Extracted LinkedIn job:', job);
     return job;
   } catch (err) {

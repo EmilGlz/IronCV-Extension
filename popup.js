@@ -27,11 +27,31 @@ let currentJob = null;
 async function init() {
   console.log('[IronCV] Popup opened');
   
-  // Check if user is logged in
-  const { token } = await chrome.storage.sync.get(['token']);
+  // Try to get token from storage or auto-detect from ironcv.com
+  let { token } = await chrome.storage.sync.get(['token']);
+  
+  // If no token, try to get from ironcv.com localStorage
+  if (!token) {
+    try {
+      const [tab] = await chrome.tabs.query({ url: 'https://ironcv.com/*' });
+      if (tab) {
+        const result = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => localStorage.getItem('token')
+        });
+        if (result && result[0]?.result) {
+          token = result[0].result;
+          await chrome.storage.sync.set({ token });
+          console.log('[IronCV] Auto-detected token from ironcv.com');
+        }
+      }
+    } catch (err) {
+      console.log('[IronCV] Could not auto-detect token:', err);
+    }
+  }
   
   if (!token) {
-    showError('Please sign in to IronCV first');
+    showError('Please sign in to IronCV.com first, then try again');
     statusText.textContent = 'Not signed in';
     return;
   }
