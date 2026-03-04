@@ -1,103 +1,121 @@
 // Popup script - handles UI logic
 const API_URL = 'https://ironcv-api.onrender.com';
 
-// UI Elements
-const loading = document.getElementById('loading');
-const notDetected = document.getElementById('not-detected');
-const jobDetected = document.getElementById('job-detected');
-const success = document.getElementById('success');
-const error = document.getElementById('error');
-const statusText = document.getElementById('status-text');
+// State elements
+const stateLoading = document.getElementById('state-loading');
+const stateNotSignedIn = document.getElementById('state-not-signed-in');
+const stateNoJob = document.getElementById('state-no-job');
+const stateMain = document.getElementById('state-main');
+const stateSaved = document.getElementById('state-saved');
 
+// Job card elements
 const jobTitle = document.getElementById('job-title');
 const jobCompany = document.getElementById('job-company');
 const jobLocation = document.getElementById('job-location');
 const jobSalary = document.getElementById('job-salary');
 
+// ATS elements
+const atsScoreValue = document.getElementById('ats-score-value');
+const atsBarFill = document.getElementById('ats-bar-fill');
+const atsResumeLabel = document.getElementById('ats-resume-label');
+const atsLoading = document.getElementById('ats-loading');
+const atsHint = document.getElementById('ats-hint');
+
+// Buttons
+const signInBtn = document.getElementById('sign-in-btn');
+const tailorBtn = document.getElementById('tailor-btn');
 const saveBtn = document.getElementById('save-btn');
 const viewTrackerBtn = document.getElementById('view-tracker-btn');
-const viewSavedBtn = document.getElementById('view-saved-btn');
-const saveAnotherBtn = document.getElementById('save-another-btn');
-const retryBtn = document.getElementById('retry-btn');
-const errorMessage = document.getElementById('error-message');
 
 let currentJob = null;
+
+// Show a single state, hide all others
+function showState(el) {
+  [stateLoading, stateNotSignedIn, stateNoJob, stateMain, stateSaved].forEach(s => s.classList.add('hidden'));
+  el.classList.remove('hidden');
+}
+
+// Get auth token: storage first, then cookie from ironcv.com tab
+async function getToken() {
+  const { token } = await chrome.storage.sync.get(['token']);
+  if (token) return token;
+
+  try {
+    const [tab] = await chrome.tabs.query({ url: 'https://ironcv.com/*' });
+    if (tab) {
+      const result = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => document.cookie
+      });
+      if (result && result[0]?.result) {
+        const match = result[0].result.match(/(?:^|;\s*)jwt=([^;]+)/);
+        if (match) {
+          const jwt = match[1];
+          await chrome.storage.sync.set({ token: jwt });
+          console.log('[IronCV] Auto-detected JWT from ironcv.com cookie');
+          return jwt;
+        }
+      }
+    }
+  } catch (err) {
+    console.log('[IronCV] Could not auto-detect token:', err);
+  }
+
+  return null;
+}
 
 // Initialize popup
 async function init() {
   console.log('[IronCV] Popup opened');
-  
-  // Try to get token from storage or auto-detect from ironcv.com
-  let { token } = await chrome.storage.sync.get(['token']);
-  
-  // If no token, try to get from ironcv.com localStorage
+  showState(stateLoading);
+
+  // 1. Get token
+  const token = await getToken();
   if (!token) {
-    try {
-      const [tab] = await chrome.tabs.query({ url: 'https://ironcv.com/*' });
-      if (tab) {
-        const result = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: () => localStorage.getItem('token')
-        });
-        if (result && result[0]?.result) {
-          token = result[0].result;
-          await chrome.storage.sync.set({ token });
-          console.log('[IronCV] Auto-detected token from ironcv.com');
-        }
-      }
-    } catch (err) {
-      console.log('[IronCV] Could not auto-detect token:', err);
-    }
-  }
-  
-  if (!token) {
-    showError('Please sign in to IronCV.com first, then try again');
-    statusText.textContent = 'Not signed in';
+    showState(stateNotSignedIn);
     return;
   }
-  
-  // Get current tab
+
+  // 2. Get current tab
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  
-  // Check if it's a job page
-  const isJobPage = tab.url.includes('linkedin.com/jobs') || 
-                     tab.url.includes('indeed.com') || 
+
+  // 3. Check if job page
+  const isJobPage = tab.url.includes('linkedin.com/jobs') ||
+                     tab.url.includes('linkedin.com/job') ||
+                     tab.url.includes('indeed.com') ||
                      tab.url.includes('glassdoor.com');
-  
+
   if (!isJobPage) {
-    showNotDetected();
-    statusText.textContent = 'Not a job posting';
+    showState(stateNoJob);
     return;
   }
-  
-  // Get job details from content script
+
+  // 4. Get job details from content script
   try {
     const response = await chrome.tabs.sendMessage(tab.id, { action: 'getJobDetails' });
-    
+
     if (response && response.job) {
       currentJob = response.job;
       displayJob(response.job);
-      statusText.textContent = 'Job detected!';
+      showState(stateMain);
+
+      // 5. Fetch resume and run ATS check in parallel
+      runAtsCheck(response.job);
     } else {
-      showNotDetected();
-      statusText.textContent = 'Could not extract job details';
+      showState(stateNoJob);
     }
   } catch (err) {
     console.error('[IronCV] Error getting job details:', err);
-    showNotDetected();
-    statusText.textContent = 'Could not read job details';
+    showState(stateNoJob);
   }
 }
 
-// Display job details
+// Display job card
 function displayJob(job) {
-  hideAll();
-  jobDetected.classList.remove('hidden');
-  
   jobTitle.textContent = job.jobTitle || 'Unknown Position';
   jobCompany.textContent = job.companyName || 'Unknown Company';
   jobLocation.textContent = job.location || 'Location not specified';
-  
+
   if (job.salaryMin && job.salaryMax) {
     jobSalary.textContent = `$${formatNumber(job.salaryMin)} - $${formatNumber(job.salaryMax)}`;
     jobSalary.style.display = 'block';
@@ -109,72 +127,106 @@ function displayJob(job) {
   }
 }
 
-// Save job to tracker
-async function saveJob() {
-  if (!currentJob) return;
-  
-  saveBtn.disabled = true;
-  saveBtn.innerHTML = '<div class="spinner"></div> Saving...';
-  
+// Run ATS score check
+async function runAtsCheck(job) {
+  atsLoading.classList.remove('hidden');
+  atsScoreValue.textContent = '--';
+  atsBarFill.style.width = '0%';
+  atsResumeLabel.textContent = '';
+  atsHint.textContent = '';
+
+  if (!job.jobDescription) {
+    atsLoading.classList.add('hidden');
+    atsResumeLabel.textContent = 'Job description not detected on this page';
+    return;
+  }
+
   try {
-    const { token } = await chrome.storage.sync.get(['token']);
-    
-    const response = await fetch(`${API_URL}/api/JobTracker`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        companyName: currentJob.companyName,
-        jobTitle: currentJob.jobTitle,
-        location: currentJob.location,
-        jobUrl: currentJob.jobUrl,
-        salaryMin: currentJob.salaryMin,
-        salaryMax: currentJob.salaryMax,
-        applicationSource: currentJob.source || 'Browser Extension',
-        status: 'Applied'
-      })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Failed to save job');
+    // Fetch last resume
+    const resumeData = await chrome.runtime.sendMessage({ action: 'fetchLastResume' });
+
+    if (resumeData.error || !resumeData.resumeText) {
+      atsLoading.classList.add('hidden');
+      atsResumeLabel.textContent = 'Add a resume on IronCV to see your score';
+      return;
     }
-    
-    showSuccess();
-    statusText.textContent = 'Saved!';
+
+    atsResumeLabel.textContent = resumeData.resumeTitle ? `Using: ${resumeData.resumeTitle}` : '';
+
+    // Check ATS
+    const atsResult = await chrome.runtime.sendMessage({
+      action: 'checkAts',
+      resume: resumeData.resumeText,
+      jobDescription: job.jobDescription
+    });
+
+    atsLoading.classList.add('hidden');
+
+    if (atsResult.error) {
+      atsResumeLabel.textContent = 'Could not calculate score';
+      return;
+    }
+
+    const score = atsResult.score ?? atsResult.atsScore ?? 0;
+    animateScore(score);
   } catch (err) {
-    console.error('[IronCV] Save error:', err);
-    showError(err.message || 'Failed to save job. Please try again.');
-    saveBtn.disabled = false;
-    saveBtn.innerHTML = '💾 Save to Job Tracker';
+    console.error('[IronCV] ATS check error:', err);
+    atsLoading.classList.add('hidden');
+    atsResumeLabel.textContent = 'Score unavailable';
   }
 }
 
-// UI State Functions
-function hideAll() {
-  loading.classList.add('hidden');
-  notDetected.classList.add('hidden');
-  jobDetected.classList.add('hidden');
-  success.classList.add('hidden');
-  error.classList.add('hidden');
+// Animate score display
+function animateScore(score) {
+  atsScoreValue.textContent = score;
+
+  let color;
+  if (score >= 70) {
+    color = '#10b981';
+  } else if (score >= 40) {
+    color = '#f59e0b';
+  } else {
+    color = '#ef4444';
+  }
+
+  atsScoreValue.style.color = color;
+  atsBarFill.style.backgroundColor = color;
+  atsBarFill.style.width = score + '%';
+
+  // Hint text
+  if (score < 40) {
+    atsHint.textContent = 'Low match \u2014 tailoring can boost this to 80%+';
+  } else if (score < 70) {
+    atsHint.textContent = 'Decent match \u2014 tailoring can push this over 80%';
+  } else {
+    atsHint.textContent = 'Strong match! Fine-tune it to 90%+ with IronCV';
+  }
 }
 
-function showNotDetected() {
-  hideAll();
-  notDetected.classList.remove('hidden');
-}
+// Save job to tracker
+async function saveJob() {
+  if (!currentJob) return;
 
-function showSuccess() {
-  hideAll();
-  success.classList.remove('hidden');
-}
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<div class="spinner-inline"></div> Saving...';
 
-function showError(message) {
-  hideAll();
-  error.classList.remove('hidden');
-  errorMessage.textContent = `❌ ${message}`;
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'saveJob',
+      job: currentJob
+    });
+
+    if (response.success) {
+      showState(stateSaved);
+    } else {
+      throw new Error(response.error || 'Failed to save job');
+    }
+  } catch (err) {
+    console.error('[IronCV] Save error:', err);
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '💾 Save to Job Tracker';
+    alert('Failed to save: ' + (err.message || 'Unknown error'));
+  }
 }
 
 // Utility
@@ -183,22 +235,20 @@ function formatNumber(num) {
 }
 
 // Event Listeners
+signInBtn.addEventListener('click', () => {
+  chrome.tabs.create({ url: 'https://ironcv.com/login' });
+});
+
+tailorBtn.addEventListener('click', () => {
+  if (!currentJob || !currentJob.jobDescription) return;
+  const encoded = btoa(encodeURIComponent(currentJob.jobDescription));
+  chrome.tabs.create({ url: 'https://ironcv.com/generate#ext-jd=' + encoded });
+});
+
 saveBtn.addEventListener('click', saveJob);
 
 viewTrackerBtn.addEventListener('click', () => {
   chrome.tabs.create({ url: 'https://ironcv.com/job-tracker' });
-});
-
-viewSavedBtn.addEventListener('click', () => {
-  chrome.tabs.create({ url: 'https://ironcv.com/job-tracker' });
-});
-
-saveAnotherBtn.addEventListener('click', () => {
-  window.close();
-});
-
-retryBtn.addEventListener('click', () => {
-  init();
 });
 
 // Initialize on popup open

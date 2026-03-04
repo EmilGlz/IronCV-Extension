@@ -13,7 +13,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Extract job details from current page
 function extractJobDetails() {
   const url = window.location.href;
-  
+
   if (url.includes('linkedin.com')) {
     return extractLinkedInJob();
   } else if (url.includes('indeed.com')) {
@@ -21,8 +21,50 @@ function extractJobDetails() {
   } else if (url.includes('glassdoor.com')) {
     return extractGlassdoorJob();
   }
-  
+
   return null;
+}
+
+// Get job description text from first matching selector
+function getTextFromSelectors(selectors, maxLen) {
+  for (const sel of selectors) {
+    const el = document.querySelector(sel);
+    if (el) {
+      const text = el.innerText.trim();
+      if (text.length > 0) {
+        return maxLen ? text.substring(0, maxLen) : text;
+      }
+    }
+  }
+  return null;
+}
+
+// LinkedIn job description selectors
+function getLinkedInJobDescription() {
+  return getTextFromSelectors([
+    '.jobs-description__content .jobs-box__html-content',
+    '.job-details-jobs-unified-top-card__job-description',
+    '.description__text',
+    '#job-details'
+  ], 8000);
+}
+
+// Indeed job description selectors
+function getIndeedJobDescription() {
+  return getTextFromSelectors([
+    '#jobDescriptionText',
+    '.jobsearch-jobDescriptionText',
+    '[data-testid=jobDescriptionText]'
+  ], 8000);
+}
+
+// Glassdoor job description selectors
+function getGlassdoorJobDescription() {
+  return getTextFromSelectors([
+    '[class*=JobDetails_jobDescription]',
+    '.desc',
+    '[data-test=job-description]'
+  ], 8000);
 }
 
 // LinkedIn Job Parser
@@ -32,7 +74,7 @@ function extractLinkedInJob() {
       jobUrl: window.location.href,
       source: 'LinkedIn'
     };
-    
+
     // Job Title
     const titleSelectors = [
       '.top-card-layout__title',
@@ -41,7 +83,7 @@ function extractLinkedInJob() {
       'h1[class*="job"]',
       'h2.t-24'
     ];
-    
+
     for (const selector of titleSelectors) {
       const element = document.querySelector(selector);
       if (element) {
@@ -49,7 +91,7 @@ function extractLinkedInJob() {
         break;
       }
     }
-    
+
     // Company Name
     const companySelectors = [
       '.topcard__org-name-link',
@@ -58,7 +100,7 @@ function extractLinkedInJob() {
       'a[data-tracking-control-name="public_jobs_topcard-org-name"]',
       '.job-details-jobs-unified-top-card__company-name a'
     ];
-    
+
     for (const selector of companySelectors) {
       const element = document.querySelector(selector);
       if (element) {
@@ -66,7 +108,7 @@ function extractLinkedInJob() {
         break;
       }
     }
-    
+
     // If company not found in link, try text elements
     if (!job.companyName) {
       const companyTextSelectors = [
@@ -74,7 +116,7 @@ function extractLinkedInJob() {
         '.jobs-unified-top-card__company-name',
         '.job-details-jobs-unified-top-card__company-name'
       ];
-      
+
       for (const selector of companyTextSelectors) {
         const element = document.querySelector(selector);
         if (element) {
@@ -83,7 +125,7 @@ function extractLinkedInJob() {
         }
       }
     }
-    
+
     // Location
     const locationSelectors = [
       '.topcard__flavor--bullet',
@@ -91,7 +133,7 @@ function extractLinkedInJob() {
       '.jobs-unified-top-card__bullet',
       'span[class*="location"]'
     ];
-    
+
     for (const selector of locationSelectors) {
       const element = document.querySelector(selector);
       if (element && element.textContent.includes(',')) {
@@ -99,7 +141,7 @@ function extractLinkedInJob() {
         break;
       }
     }
-    
+
     // Salary (LinkedIn often doesn't show this)
     const salaryElement = document.querySelector('.salary, .compensation, [class*="salary"]');
     if (salaryElement) {
@@ -112,13 +154,16 @@ function extractLinkedInJob() {
         job.salary = salaryText.trim();
       }
     }
-    
+
+    // Job Description
+    job.jobDescription = getLinkedInJobDescription();
+
     // Validate we got at least job title or company
     if (!job.jobTitle && !job.companyName) {
       console.warn('[IronCV] Could not extract job details - LinkedIn UI may have changed');
       return null;
     }
-    
+
     console.log('[IronCV] Extracted LinkedIn job:', job);
     return job;
   } catch (err) {
@@ -134,25 +179,25 @@ function extractIndeedJob() {
       jobUrl: window.location.href,
       source: 'Indeed'
     };
-    
+
     // Job Title
     const titleElement = document.querySelector('.jobsearch-JobInfoHeader-title, h1');
     if (titleElement) {
       job.jobTitle = titleElement.textContent.trim();
     }
-    
+
     // Company Name
     const companyElement = document.querySelector('[data-company-name="true"], .jobsearch-InlineCompanyRating-companyHeader a, .jobsearch-CompanyInfoContainer a');
     if (companyElement) {
       job.companyName = companyElement.textContent.trim();
     }
-    
+
     // Location
     const locationElement = document.querySelector('[data-testid="jobsearch-JobInfoHeader-companyLocation"], .jobsearch-JobInfoHeader-subtitle div');
     if (locationElement) {
       job.location = locationElement.textContent.trim();
     }
-    
+
     // Salary
     const salaryElement = document.querySelector('.jobsearch-JobMetadataHeader-item, [data-testid="attribute_snippet_testid"]');
     if (salaryElement && salaryElement.textContent.includes('$')) {
@@ -165,7 +210,10 @@ function extractIndeedJob() {
         job.salary = salaryText.trim();
       }
     }
-    
+
+    // Job Description
+    job.jobDescription = getIndeedJobDescription();
+
     console.log('[IronCV] Extracted Indeed job:', job);
     return job;
   } catch (err) {
@@ -181,25 +229,25 @@ function extractGlassdoorJob() {
       jobUrl: window.location.href,
       source: 'Glassdoor'
     };
-    
+
     // Job Title
     const titleElement = document.querySelector('[data-test="job-title"], h1');
     if (titleElement) {
       job.jobTitle = titleElement.textContent.trim();
     }
-    
+
     // Company Name
     const companyElement = document.querySelector('[data-test="employer-name"], .EmployerProfile_employerName__Xemli');
     if (companyElement) {
       job.companyName = companyElement.textContent.trim();
     }
-    
+
     // Location
     const locationElement = document.querySelector('[data-test="location"], .JobDetails_location__mSg5h');
     if (locationElement) {
       job.location = locationElement.textContent.trim();
     }
-    
+
     // Salary
     const salaryElement = document.querySelector('[data-test="detailSalary"], .JobDetails_salary__6FTOE');
     if (salaryElement) {
@@ -212,7 +260,10 @@ function extractGlassdoorJob() {
         job.salary = salaryText.trim();
       }
     }
-    
+
+    // Job Description
+    job.jobDescription = getGlassdoorJobDescription();
+
     console.log('[IronCV] Extracted Glassdoor job:', job);
     return job;
   } catch (err) {
@@ -224,20 +275,20 @@ function extractGlassdoorJob() {
 // Parse salary string to min/max numbers
 function parseSalary(text) {
   if (!text) return null;
-  
+
   // Remove common words
   text = text.replace(/a year|per year|annually|\/yr|estimated/gi, '').trim();
-  
+
   // Extract numbers (with K notation)
   const numbers = text.match(/\$?([\d,]+)([kK])?/g);
-  
+
   if (!numbers || numbers.length === 0) return null;
-  
+
   const parseNumber = (str) => {
     const num = parseFloat(str.replace(/[$,kK]/g, ''));
     return str.toLowerCase().includes('k') ? num * 1000 : num;
   };
-  
+
   if (numbers.length >= 2) {
     // Range found (e.g., "$80K - $120K")
     return {
@@ -252,7 +303,7 @@ function parseSalary(text) {
       max: null
     };
   }
-  
+
   return null;
 }
 
@@ -277,7 +328,7 @@ function addPageIndicator() {
     opacity: 0;
     animation: fadeInOut 3s ease-in-out;
   `;
-  
+
   const style = document.createElement('style');
   style.textContent = `
     @keyframes fadeInOut {
@@ -285,12 +336,38 @@ function addPageIndicator() {
       10%, 90% { opacity: 1; }
     }
   `;
-  
+
   document.head.appendChild(style);
   document.body.appendChild(indicator);
-  
+
   setTimeout(() => indicator.remove(), 3000);
 }
 
 // Show indicator when content script loads
 setTimeout(addPageIndicator, 1000);
+
+// MutationObserver for LinkedIn SPA navigation
+(function() {
+  if (!window.location.href.includes('linkedin.com')) return;
+
+  let lastUrl = window.location.href;
+  let debounceTimer = null;
+
+  const observer = new MutationObserver(() => {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      const currentUrl = window.location.href;
+      if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+        console.log('[IronCV] LinkedIn SPA navigation detected:', currentUrl);
+        const job = extractJobDetails();
+        if (job) {
+          chrome.runtime.sendMessage({ action: 'jobUpdated', job });
+        }
+      }
+    }, 800);
+  });
+
+  observer.observe(document.body, { subtree: true, childList: true });
+  console.log('[IronCV] MutationObserver started for LinkedIn SPA');
+})();

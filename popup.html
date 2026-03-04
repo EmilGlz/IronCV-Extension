@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IronCV Job Tracker</title>
+  <title>IronCV Resume Copilot</title>
   <style>
     * {
       margin: 0;
@@ -12,7 +12,7 @@
     }
 
     body {
-      width: 360px;
+      width: 400px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
       background: #f9fafb;
     }
@@ -27,24 +27,87 @@
     .header h1 {
       font-size: 18px;
       font-weight: 700;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .header p {
-      font-size: 13px;
-      opacity: 0.9;
+      font-size: 12px;
+      opacity: 0.85;
     }
 
     .content {
       padding: 16px;
     }
 
+    .hidden {
+      display: none !important;
+    }
+
+    /* State: Loading */
+    #state-loading {
+      text-align: center;
+      padding: 32px 16px;
+      color: #6b7280;
+    }
+
+    #state-loading .spinner-lg {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #C41E3A;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* State: Not signed in */
+    #state-not-signed-in {
+      text-align: center;
+      padding: 24px 16px;
+    }
+
+    #state-not-signed-in p {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 16px;
+    }
+
+    /* State: No job */
+    #state-no-job {
+      text-align: center;
+      padding: 24px 16px;
+      color: #6b7280;
+    }
+
+    #state-no-job svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    #state-no-job h3 {
+      margin-bottom: 8px;
+      color: #374151;
+    }
+
+    #state-no-job p {
+      font-size: 13px;
+      color: #9ca3af;
+    }
+
+    /* State: Main */
     .job-card {
       background: white;
       border-radius: 12px;
-      padding: 16px;
+      padding: 14px 16px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
 
     .job-card h3 {
@@ -54,50 +117,90 @@
       margin-bottom: 4px;
     }
 
-    .job-card p {
+    .job-card .job-meta {
       font-size: 13px;
       color: #6b7280;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .job-card .salary {
       font-size: 14px;
       color: #059669;
       font-weight: 600;
+      margin-top: 4px;
     }
 
-    .status {
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      font-size: 14px;
-      text-align: center;
+    /* ATS Score Section */
+    .ats-section {
+      background: white;
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 14px;
     }
 
-    .status.success {
-      background: #d1fae5;
-      color: #065f46;
-      border: 1px solid #6ee7b7;
+    .ats-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
     }
 
-    .status.error {
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fca5a5;
+    .ats-score-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
     }
 
-    .status.info {
-      background: #dbeafe;
-      color: #1e40af;
-      border: 1px solid #93c5fd;
+    #ats-score-value {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+      color: #6b7280;
     }
 
-    .status.warning {
-      background: #fef3c7;
-      color: #92400e;
-      border: 1px solid #fcd34d;
+    .ats-bar-container {
+      flex: 1;
+      height: 10px;
+      background: #f3f4f6;
+      border-radius: 5px;
+      overflow: hidden;
     }
 
+    #ats-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 5px;
+      background: #6b7280;
+      transition: width 0.6s ease, background-color 0.6s ease;
+    }
+
+    #ats-resume-label {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    #ats-loading {
+      font-size: 13px;
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #ats-loading .spinner-sm {
+      border: 2px solid #f3f4f6;
+      border-top: 2px solid #C41E3A;
+      border-radius: 50%;
+      width: 14px;
+      height: 14px;
+      animation: spin 0.8s linear infinite;
+    }
+
+    /* Buttons */
     button {
       width: 100%;
       padding: 12px;
@@ -134,33 +237,40 @@
       cursor: not-allowed;
     }
 
-    .spinner {
+    .spinner-inline {
       border: 2px solid #f3f4f6;
-      border-top: 2px solid #C41E3A;
+      border-top: 2px solid white;
       border-radius: 50%;
       width: 16px;
       height: 16px;
       animation: spin 0.8s linear infinite;
       display: inline-block;
       margin-right: 8px;
+      vertical-align: middle;
     }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .not-detected {
+    #ats-hint {
+      font-size: 12px;
+      color: #9ca3af;
       text-align: center;
-      padding: 24px 16px;
-      color: #6b7280;
+      margin-top: 10px;
     }
 
-    .not-detected svg {
-      width: 48px;
-      height: 48px;
+    /* State: Saved */
+    #state-saved {
+      text-align: center;
+      padding: 16px 0;
+    }
+
+    .status-success {
+      padding: 12px;
+      border-radius: 8px;
       margin-bottom: 12px;
-      opacity: 0.5;
+      font-size: 14px;
+      text-align: center;
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
     }
 
     .link {
@@ -175,83 +285,68 @@
     .link:hover {
       text-decoration: underline;
     }
-
-    .hidden {
-      display: none;
-    }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>🎯 IronCV Job Tracker</h1>
-    <p id="status-text">Detecting job posting...</p>
+    <h1>IronCV</h1>
+    <p>Resume Copilot</p>
   </div>
 
   <div class="content">
-    <!-- Loading State -->
-    <div id="loading" class="status info">
-      <div class="spinner"></div>
-      Analyzing page...
+    <!-- Loading -->
+    <div id="state-loading">
+      <div class="spinner-lg"></div>
+      <p>Initializing...</p>
     </div>
 
-    <!-- Not a Job Page -->
-    <div id="not-detected" class="hidden">
-      <div class="not-detected">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
-        <h3 style="margin-bottom: 8px;">No Job Detected</h3>
-        <p style="font-size: 13px; color: #9ca3af;">
-          Navigate to a job posting on LinkedIn, Indeed, or Glassdoor to save it.
-        </p>
-      </div>
-      <a href="https://ironcv.com/job-tracker" target="_blank" class="link">
-        View Job Tracker →
-      </a>
+    <!-- Not Signed In -->
+    <div id="state-not-signed-in" class="hidden">
+      <p>Sign in to IronCV to use the resume copilot.</p>
+      <button id="sign-in-btn" class="primary">Sign in to IronCV</button>
     </div>
 
-    <!-- Job Detected -->
-    <div id="job-detected" class="hidden">
+    <!-- No Job Page -->
+    <div id="state-no-job" class="hidden">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <h3>No Job Detected</h3>
+      <p>Navigate to a job posting on LinkedIn, Indeed, or Glassdoor.</p>
+      <a href="https://ironcv.com/job-tracker" target="_blank" class="link">View Job Tracker</a>
+    </div>
+
+    <!-- Main Panel -->
+    <div id="state-main" class="hidden">
       <div class="job-card">
         <h3 id="job-title">Loading...</h3>
-        <p id="job-company">Company</p>
-        <p id="job-location">Location</p>
+        <p class="job-meta" id="job-company">Company</p>
+        <p class="job-meta" id="job-location">Location</p>
         <p class="salary" id="job-salary"></p>
       </div>
 
-      <button id="save-btn" class="primary">
-        💾 Save to Job Tracker
-      </button>
+      <div class="ats-section">
+        <div class="ats-label">ATS Match Score</div>
+        <div class="ats-score-row">
+          <div id="ats-score-value">--</div>
+          <div class="ats-bar-container">
+            <div id="ats-bar-fill"></div>
+          </div>
+        </div>
+        <div id="ats-resume-label"></div>
+        <div id="ats-loading"><div class="spinner-sm"></div> Analyzing match...</div>
+      </div>
 
-      <button id="view-tracker-btn" class="secondary">
-        View Tracker
-      </button>
+      <button id="tailor-btn" class="primary">✨ Tailor Resume for This Job</button>
+      <button id="save-btn" class="secondary">💾 Save to Job Tracker</button>
+
+      <p id="ats-hint"></p>
     </div>
 
-    <!-- Success State -->
-    <div id="success" class="hidden">
-      <div class="status success">
-        ✅ Job saved successfully!
-      </div>
-      <button id="view-saved-btn" class="primary">
-        View in Tracker
-      </button>
-      <button id="save-another-btn" class="secondary">
-        Save Another Job
-      </button>
-    </div>
-
-    <!-- Error State -->
-    <div id="error" class="hidden">
-      <div class="status error" id="error-message">
-        ❌ Failed to save job
-      </div>
-      <button id="retry-btn" class="primary">
-        Try Again
-      </button>
-      <a href="https://ironcv.com/login" target="_blank" class="link">
-        Sign in to IronCV →
-      </a>
+    <!-- Saved State -->
+    <div id="state-saved" class="hidden">
+      <div class="status-success">✅ Job saved successfully!</div>
+      <button id="view-tracker-btn" class="primary">View Tracker</button>
     </div>
   </div>
 
