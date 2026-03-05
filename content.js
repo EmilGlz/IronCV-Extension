@@ -76,13 +76,16 @@ function extractLinkedInJob() {
     };
 
     // Job Title — LinkedIn uses obfuscated hashed classes that change every deploy.
-    // Most reliable: parse document.title which is always "Job Title at Company | LinkedIn"
-    // or "Job Title - Company | LinkedIn"
+    // Most reliable: parse document.title.
+    // Format 1: "Job Title | Company | LinkedIn"
+    // Format 2: "Job Title at Company | LinkedIn"
     const rawTitle = document.title || '';
-    const titleMatch = rawTitle.match(/^(.+?)\s+(?:at|[-–])\s+(.+?)\s*[|\-–]/);
-    if (titleMatch) {
-      job.jobTitle = titleMatch[1].trim();
-      if (!job.companyName) job.companyName = titleMatch[2].trim();
+    const pipeMatch = rawTitle.match(/^(.+?)\s*\|\s*(.+?)\s*\|\s*LinkedIn/i);
+    const atMatch   = rawTitle.match(/^(.+?)\s+(?:at|[-–])\s+(.+?)\s*[|\-–]/);
+    const match = pipeMatch || atMatch;
+    if (match) {
+      job.jobTitle   = match[1].trim();
+      job.companyName = match[2].trim();
     }
 
     // Fallback: try known selectors (may work on older LinkedIn versions)
