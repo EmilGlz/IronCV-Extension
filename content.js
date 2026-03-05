@@ -75,70 +75,79 @@ function extractLinkedInJob() {
       source: 'LinkedIn'
     };
 
-    // Job Title
-    const titleSelectors = [
-      '.top-card-layout__title',
-      '.topcard__title',
-      'h1.job-title',
-      'h1[class*="job"]',
-      'h2.t-24'
-    ];
-
-    for (const selector of titleSelectors) {
-      const element = document.querySelector(selector);
-      if (element) {
-        job.jobTitle = element.textContent.trim();
-        break;
-      }
+    // Job Title — LinkedIn uses obfuscated hashed classes that change every deploy.
+    // Most reliable: parse document.title which is always "Job Title at Company | LinkedIn"
+    // or "Job Title - Company | LinkedIn"
+    const rawTitle = document.title || '';
+    const titleMatch = rawTitle.match(/^(.+?)\s+(?:at|[-–])\s+(.+?)\s*[|\-–]/);
+    if (titleMatch) {
+      job.jobTitle = titleMatch[1].trim();
+      if (!job.companyName) job.companyName = titleMatch[2].trim();
     }
 
-    // Company Name
-    const companySelectors = [
-      '.topcard__org-name-link',
-      '.top-card-layout__second-subline a',
-      '.topcard__flavor--company',
-      'a[data-tracking-control-name="public_jobs_topcard-org-name"]',
-      '.job-details-jobs-unified-top-card__company-name a'
-    ];
-
-    for (const selector of companySelectors) {
-      const element = document.querySelector(selector);
-      if (element) {
-        job.companyName = element.textContent.trim();
-        break;
-      }
-    }
-
-    // If company not found in link, try text elements
-    if (!job.companyName) {
-      const companyTextSelectors = [
-        '.topcard__flavor',
-        '.jobs-unified-top-card__company-name',
-        '.job-details-jobs-unified-top-card__company-name'
+    // Fallback: try known selectors (may work on older LinkedIn versions)
+    if (!job.jobTitle) {
+      const titleSelectors = [
+        'h1',
+        '.top-card-layout__title',
+        '.topcard__title',
+        'h1.job-title',
+        '[class*="job-title"]',
+        'a[class*="job-title"]'
       ];
-
-      for (const selector of companyTextSelectors) {
+      for (const selector of titleSelectors) {
         const element = document.querySelector(selector);
-        if (element) {
+        if (element && element.textContent.trim().length > 2) {
+          job.jobTitle = element.textContent.trim();
+          break;
+        }
+      }
+    }
+
+    // Company Name — already parsed from document.title above.
+    // Fallback: try meta tags and known selectors
+    if (!job.companyName) {
+      // Try og:title meta: "Job Title at Company | LinkedIn"
+      const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content') || '';
+      const ogMatch = ogTitle.match(/^.+?\s+(?:at|[-–])\s+(.+?)(?:\s*[|\-–]|$)/);
+      if (ogMatch) job.companyName = ogMatch[1].trim();
+    }
+    if (!job.companyName) {
+      const companySelectors = [
+        '.topcard__org-name-link',
+        '.top-card-layout__second-subline a',
+        'a[data-tracking-control-name="public_jobs_topcard-org-name"]',
+        '.job-details-jobs-unified-top-card__company-name a',
+        '.jobs-unified-top-card__company-name',
+        '[class*="company-name"]'
+      ];
+      for (const selector of companySelectors) {
+        const element = document.querySelector(selector);
+        if (element && element.textContent.trim().length > 1) {
           job.companyName = element.textContent.trim();
           break;
         }
       }
     }
 
-    // Location
-    const locationSelectors = [
-      '.topcard__flavor--bullet',
-      '.top-card-layout__second-subline .topcard__flavor',
-      '.jobs-unified-top-card__bullet',
-      'span[class*="location"]'
-    ];
+    // Location — try meta description first, then selectors
+    const metaDesc = document.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+    const locMatch = metaDesc.match(/(\w[\w\s]+,\s*\w[\w\s]+)/);
+    if (locMatch) job.location = locMatch[1].trim();
 
-    for (const selector of locationSelectors) {
-      const element = document.querySelector(selector);
-      if (element && element.textContent.includes(',')) {
-        job.location = element.textContent.trim();
-        break;
+    if (!job.location) {
+      const locationSelectors = [
+        '.topcard__flavor--bullet',
+        '.jobs-unified-top-card__bullet',
+        'span[class*="location"]',
+        '[class*="workplace-type"]'
+      ];
+      for (const selector of locationSelectors) {
+        const element = document.querySelector(selector);
+        if (element && element.textContent.trim().length > 2) {
+          job.location = element.textContent.trim();
+          break;
+        }
       }
     }
 
