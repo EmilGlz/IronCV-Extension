@@ -41,6 +41,27 @@ function getTextFromSelectors(selectors, maxLen) {
 
 // LinkedIn job description selectors
 function getLinkedInJobDescription() {
+  // LinkedIn now uses obfuscated classes — find description by content heuristics.
+  // The job description div is the largest text block containing "About the job",
+  // with no nav/header content present.
+  const NAV_SIGNALS = ['Skip to main', 'My Network', 'Easy Apply', 'Notifications'];
+
+  const candidates = [...document.querySelectorAll('div')]
+    .filter(el =>
+      el.childElementCount < 8 &&
+      el.innerText?.length > 800 &&
+      el.innerText?.includes('About the job') &&
+      !NAV_SIGNALS.some(s => el.innerText?.includes(s))
+    )
+    .sort((a, b) => b.innerText.length - a.innerText.length);
+
+  if (candidates.length > 0) {
+    // Strip the "About the job" heading prefix
+    const text = candidates[0].innerText.trim().replace(/^About the job\s*/i, '');
+    return text.substring(0, 8000);
+  }
+
+  // Fallback: try legacy selectors (older LinkedIn versions)
   return getTextFromSelectors([
     '.jobs-description__content .jobs-box__html-content',
     '.job-details-jobs-unified-top-card__job-description',
