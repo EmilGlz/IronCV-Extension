@@ -1,5 +1,5 @@
 // Popup script - handles UI logic
-const API_URL = 'https://ironcv-api.onrender.com';
+const API_URL = 'https://ironcv-api-y89t.onrender.com';
 
 // State elements
 const stateLoading = document.getElementById('state-loading');

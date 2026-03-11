@@ -66,7 +66,7 @@ async function handleCheckAts(resume, jobDescription) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch('https://ironcv-api.onrender.com/api/Ats/check', {
+  const response = await fetch('https://ironcv-api-y89t.onrender.com/api/Ats/check', {
     method: 'POST',
     headers,
     body: JSON.stringify({ resume, jobDescription })
@@ -88,7 +88,7 @@ async function handleFetchLastResume() {
     throw new Error('Not signed in');
   }
 
-  const response = await fetch('https://ironcv-api.onrender.com/api/Dashboard', {
+  const response = await fetch('https://ironcv-api-y89t.onrender.com/api/Dashboard', {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`
@@ -117,7 +117,7 @@ async function saveJobToTracker(job) {
     throw new Error('Not signed in. Please sign in to IronCV first.');
   }
 
-  const response = await fetch('https://ironcv-api.onrender.com/api/JobTracker', {
+  const response = await fetch('https://ironcv-api-y89t.onrender.com/api/JobTracker', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -15,7 +15,7 @@
     "https://glassdoor.com/*",
     "https://www.glassdoor.com/*",
     "https://ironcv.com/*",
-    "https://ironcv-api.onrender.com/*"
+    "https://ironcv-api-y89t.onrender.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
