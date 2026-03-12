@@ -1,4 +1,4 @@
-// Content script - runs on job pages to extract details
+﻿// Content script - runs on job pages to extract details
 console.log('[IronCV] Content script loaded');
 
 // Listen for messages from popup
@@ -349,14 +349,14 @@ function addPageIndicator() {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background: linear-gradient(135deg, #C41E3A 0%, #9f1239 100%);
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
     color: white;
     padding: 8px 16px;
     border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
     z-index: 999999;
-    box-shadow: 0 4px 12px rgba(196, 30, 58, 0.3);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     opacity: 0;
     animation: fadeInOut 3s ease-in-out;
@@ -379,28 +379,113 @@ function addPageIndicator() {
 // Show indicator when content script loads
 setTimeout(addPageIndicator, 1000);
 
-// MutationObserver for LinkedIn SPA navigation
+// ── LinkedIn button injection ─────────────────────────────────────────────────
+// Injects "⚡ Tailor with IronCV" next to the Apply button on job posts.
+// Safe to call multiple times — bails out if button already injected.
+function injectLinkedInButton() {
+  if (!window.location.href.includes('linkedin.com/jobs')) return;
+  if (document.getElementById('ironcv-tailor-btn')) return; // already injected
+
+  // Find the apply button row — LinkedIn uses many class variants, try several
+  const applySelectors = [
+    '.jobs-apply-button--top-card',
+    '.jobs-s-apply',
+    '.jobs-unified-top-card__content--two-pane .jobs-apply-button',
+    'button[aria-label*="Easy Apply"]',
+    'button[aria-label*="Apply"]',
+  ];
+
+  let anchorEl = null;
+  for (const sel of applySelectors) {
+    const el = document.querySelector(sel);
+    if (el) { anchorEl = el.closest('div') || el.parentElement; break; }
+  }
+  if (!anchorEl) return; // job panel not rendered yet — observer will retry
+
+  // Build the button
+  const btn = document.createElement('button');
+  btn.id = 'ironcv-tailor-btn';
+  btn.innerHTML = '⚡ Tailor with IronCV';
+  btn.style.cssText = `
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    color: #fff;
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    box-shadow: 0 2px 8px rgba(124,58,237,0.35);
+    margin-left: 8px;
+    vertical-align: middle;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    white-space: nowrap;
+    z-index: 100;
+  `;
+  btn.onmouseenter = () => {
+    btn.style.transform = 'scale(1.04)';
+    btn.style.boxShadow = '0 4px 14px rgba(124,58,237,0.5)';
+  };
+  btn.onmouseleave = () => {
+    btn.style.transform = 'scale(1)';
+    btn.style.boxShadow = '0 2px 8px rgba(124,58,237,0.35)';
+  };
+
+  btn.addEventListener('click', () => {
+    const job = extractLinkedInJob();
+    const jd  = job?.jobDescription || '';
+    if (!jd) {
+      alert('IronCV: Could not extract the job description. Try scrolling down to load it first.');
+      return;
+    }
+    const encoded = btoa(encodeURIComponent(jd));
+    const url = `https://ironcv.com/generate#ext-jd=${encoded}`;
+    window.open(url, '_blank');
+  });
+
+  // Insert after the apply button
+  anchorEl.appendChild(btn);
+  console.log('[IronCV] Tailor button injected');
+}
+
+// MutationObserver for LinkedIn SPA navigation + button injection
 (function() {
   if (!window.location.href.includes('linkedin.com')) return;
 
   let lastUrl = window.location.href;
   let debounceTimer = null;
 
+  // Try injecting on every DOM change (handles SPA lazy renders)
   const observer = new MutationObserver(() => {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
       const currentUrl = window.location.href;
+
+      // SPA navigation → new job → remove old button + notify popup
       if (currentUrl !== lastUrl) {
         lastUrl = currentUrl;
+        const old = document.getElementById('ironcv-tailor-btn');
+        if (old) old.remove();
         console.log('[IronCV] LinkedIn SPA navigation detected:', currentUrl);
         const job = extractJobDetails();
-        if (job) {
-          chrome.runtime.sendMessage({ action: 'jobUpdated', job });
-        }
+        if (job) chrome.runtime.sendMessage({ action: 'jobUpdated', job });
       }
-    }, 800);
+
+      // Always try to inject (idempotent — skips if already present)
+      injectLinkedInButton();
+    }, 600);
   });
 
   observer.observe(document.body, { subtree: true, childList: true });
+
+  // Also try immediately for direct page loads
+  setTimeout(injectLinkedInButton, 1500);
+  setTimeout(injectLinkedInButton, 3000); // retry for slow renders
+
   console.log('[IronCV] MutationObserver started for LinkedIn SPA');
 })();
+
