@@ -478,6 +478,19 @@ function injectLinkedInButton() {
     </svg>
     <span>Tailor with IronCV</span>
   `;
+  // Inject keyframes for glow animation (once)
+  if (!document.getElementById('ironcv-glow-style')) {
+    const style = document.createElement('style');
+    style.id = 'ironcv-glow-style';
+    style.textContent = `
+      @keyframes ironcv-glow {
+        0%, 100% { box-shadow: 0 0 8px rgba(124,58,237,0.6), 0 0 16px rgba(124,58,237,0.3); }
+        50% { box-shadow: 0 0 12px rgba(124,58,237,0.8), 0 0 24px rgba(124,58,237,0.5); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   btn.style.cssText = `
     display: inline-flex;
     align-items: center;
@@ -494,20 +507,23 @@ function injectLinkedInButton() {
     line-height: 1;
     cursor: pointer;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    box-shadow: 0 1px 4px rgba(124,58,237,0.3);
+    box-shadow: 0 0 8px rgba(124,58,237,0.6), 0 0 16px rgba(124,58,237,0.3);
     margin-left: 4px;
     vertical-align: middle;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
     white-space: nowrap;
     z-index: 100;
+    animation: ironcv-glow 2s ease-in-out infinite;
   `;
   btn.onmouseenter = () => {
-    btn.style.transform = 'scale(1.04)';
-    btn.style.boxShadow = '0 4px 14px rgba(124,58,237,0.5)';
+    btn.style.transform = 'scale(1.05)';
+    btn.style.boxShadow = '0 0 16px rgba(124,58,237,0.9), 0 0 32px rgba(124,58,237,0.6)';
+    btn.style.animation = 'none';
   };
   btn.onmouseleave = () => {
     btn.style.transform = 'scale(1)';
-    btn.style.boxShadow = '0 2px 8px rgba(124,58,237,0.35)';
+    btn.style.boxShadow = '0 0 8px rgba(124,58,237,0.6), 0 0 16px rgba(124,58,237,0.3)';
+    btn.style.animation = 'ironcv-glow 2s ease-in-out infinite';
   };
 
   btn.addEventListener('click', () => {
