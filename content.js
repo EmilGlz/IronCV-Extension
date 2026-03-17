@@ -446,6 +446,20 @@ function injectLinkedInButton() {
       break;
     }
   }
+  
+  // Fallback: find any button with "Apply" in text content
+  if (!anchorEl) {
+    const allButtons = document.querySelectorAll('button');
+    for (const btn of allButtons) {
+      const text = btn.textContent?.trim() || '';
+      if (text.includes('Apply') && !text.includes('IronCV')) {
+        anchorEl = btn.closest('div') || btn.parentElement;
+        matchedSelector = 'text-match: ' + text.substring(0, 30);
+        break;
+      }
+    }
+  }
+  
   if (!anchorEl) {
     console.log('[IronCV] No apply button found yet, selectors tried:', applySelectors.length);
     return; // job panel not rendered yet — observer will retry
