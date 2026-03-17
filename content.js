@@ -696,10 +696,21 @@ function injectIndeedButton() {
     window.open(url, '_blank');
   });
 
-  // Insert inline with the apply button
+  // Insert inline — wrap apply button and our button in a flex row if needed
   if (applyBtnEl && applyBtnEl.parentElement) {
-    // Insert right after the actual apply button element
-    applyBtnEl.parentElement.insertBefore(btn, applyBtnEl.nextSibling);
+    const parent = applyBtnEl.parentElement;
+    const parentStyle = window.getComputedStyle(parent);
+    
+    // If parent is flex-column or block, create a wrapper for inline display
+    if (parentStyle.flexDirection === 'column' || parentStyle.display === 'block') {
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;';
+      parent.insertBefore(wrapper, applyBtnEl);
+      wrapper.appendChild(applyBtnEl);
+      wrapper.appendChild(btn);
+    } else {
+      parent.insertBefore(btn, applyBtnEl.nextSibling);
+    }
   } else if (anchorEl.parentElement) {
     anchorEl.parentElement.insertBefore(btn, anchorEl.nextSibling);
   } else {
