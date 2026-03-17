@@ -422,19 +422,35 @@ function injectLinkedInButton() {
 
   // Find the apply button row — LinkedIn uses many class variants, try several
   const applySelectors = [
+    // Direct job view page (/jobs/view/xxx)
+    '.jobs-apply-button',
     '.jobs-apply-button--top-card',
+    // Collections/search split-pane
     '.jobs-s-apply',
     '.jobs-unified-top-card__content--two-pane .jobs-apply-button',
+    // Fallback: any apply button by aria-label
     'button[aria-label*="Easy Apply"]',
     'button[aria-label*="Apply"]',
+    // Newer LinkedIn layouts
+    '[data-job-id] button.jobs-apply-button',
+    '.job-details-jobs-unified-top-card__container--two-pane button',
   ];
 
   let anchorEl = null;
+  let matchedSelector = null;
   for (const sel of applySelectors) {
     const el = document.querySelector(sel);
-    if (el) { anchorEl = el.closest('div') || el.parentElement; break; }
+    if (el) {
+      anchorEl = el.closest('div') || el.parentElement;
+      matchedSelector = sel;
+      break;
+    }
   }
-  if (!anchorEl) return; // job panel not rendered yet — observer will retry
+  if (!anchorEl) {
+    console.log('[IronCV] No apply button found yet, selectors tried:', applySelectors.length);
+    return; // job panel not rendered yet — observer will retry
+  }
+  console.log('[IronCV] Found apply button via:', matchedSelector);
 
   // Build the button — match LinkedIn's "Easy Apply" button sizing
   const btn = document.createElement('button');
