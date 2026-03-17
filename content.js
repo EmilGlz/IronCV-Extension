@@ -438,9 +438,11 @@ function injectLinkedInButton() {
 
   let anchorEl = null;
   let matchedSelector = null;
+  let applyBtnEl = null; // reference to actual apply button for size matching
   for (const sel of applySelectors) {
     const el = document.querySelector(sel);
     if (el) {
+      applyBtnEl = el;
       anchorEl = el.closest('div') || el.parentElement;
       matchedSelector = sel;
       break;
@@ -455,6 +457,7 @@ function injectLinkedInButton() {
       const text = el.textContent?.trim() || '';
       // Match "Easy Apply" or "Apply" but not our own button
       if ((text === 'Easy Apply' || text === 'Apply') && !text.includes('IronCV')) {
+        applyBtnEl = el;
         anchorEl = el.closest('div') || el.parentElement;
         matchedSelector = 'text-match: ' + el.tagName + ' "' + text + '"';
         break;
@@ -491,6 +494,23 @@ function injectLinkedInButton() {
     document.head.appendChild(style);
   }
 
+  // Match Easy Apply button size dynamically
+  let btnHeight = 32;
+  let btnFontSize = 14;
+  let btnRadius = 16;
+  let btnPadding = '0 12px';
+  
+  if (applyBtnEl) {
+    const computed = window.getComputedStyle(applyBtnEl);
+    const h = parseInt(computed.height, 10);
+    if (h > 0 && h < 100) {
+      btnHeight = h;
+      btnFontSize = Math.max(12, Math.min(16, Math.round(h * 0.4)));
+      btnRadius = Math.round(h / 2);
+      btnPadding = `0 ${Math.round(h * 0.4)}px`;
+    }
+  }
+
   btn.style.cssText = `
     display: inline-flex;
     align-items: center;
@@ -499,10 +519,10 @@ function injectLinkedInButton() {
     background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
     color: #fff;
     border: none;
-    border-radius: 16px;
-    padding: 0 12px;
-    height: 32px;
-    font-size: 14px;
+    border-radius: ${btnRadius}px;
+    padding: ${btnPadding};
+    height: ${btnHeight}px;
+    font-size: ${btnFontSize}px;
     font-weight: 600;
     line-height: 1;
     cursor: pointer;
