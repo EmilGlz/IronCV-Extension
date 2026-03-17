@@ -522,8 +522,13 @@ function injectLinkedInButton() {
     window.open(url, '_blank');
   });
 
-  // Insert after the apply button
-  anchorEl.appendChild(btn);
+  // Insert beside the apply button (not inside)
+  // anchorEl is the parent div — try to insert btn after the actual Apply element
+  if (anchorEl.parentElement) {
+    anchorEl.parentElement.insertBefore(btn, anchorEl.nextSibling);
+  } else {
+    anchorEl.appendChild(btn);
+  }
   console.log('[IronCV] Tailor button injected');
 }
 
