@@ -568,6 +568,159 @@ function injectLinkedInButton() {
   console.log('[IronCV] Tailor button injected');
 }
 
+// ── Indeed button injection ───────────────────────────────────────────────────
+function injectIndeedButton() {
+  if (!window.location.href.includes('indeed.com')) return;
+  if (document.getElementById('ironcv-tailor-btn')) return;
+
+  // Find the Apply button on Indeed
+  const applySelectors = [
+    'button[id*="indeedApply"]',
+    '.jobsearch-IndeedApplyButton-contentWrapper',
+    'button.indeed-apply-button',
+    '[data-testid="indeedApply"]',
+    'button[aria-label*="Apply"]',
+  ];
+
+  let applyBtnEl = null;
+  let anchorEl = null;
+  
+  for (const sel of applySelectors) {
+    const el = document.querySelector(sel);
+    if (el) {
+      applyBtnEl = el;
+      anchorEl = el.closest('div') || el.parentElement;
+      break;
+    }
+  }
+
+  // Fallback: find any button with "Apply" text
+  if (!anchorEl) {
+    const buttons = document.querySelectorAll('button');
+    for (const btn of buttons) {
+      const text = btn.textContent?.trim() || '';
+      if (text.includes('Apply') && !text.includes('IronCV')) {
+        applyBtnEl = btn;
+        anchorEl = btn.closest('div') || btn.parentElement;
+        break;
+      }
+    }
+  }
+
+  if (!anchorEl) {
+    console.log('[IronCV] Indeed: No apply button found yet');
+    return;
+  }
+
+  // Inject keyframes for glow animation (once)
+  if (!document.getElementById('ironcv-glow-style')) {
+    const style = document.createElement('style');
+    style.id = 'ironcv-glow-style';
+    style.textContent = `
+      @keyframes ironcv-glow {
+        0%, 100% { box-shadow: 0 0 8px rgba(124,58,237,0.6), 0 0 16px rgba(124,58,237,0.3); }
+        50% { box-shadow: 0 0 12px rgba(124,58,237,0.8), 0 0 24px rgba(124,58,237,0.5); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Match apply button size
+  let btnHeight = 40;
+  let btnFontSize = 14;
+  let btnRadius = 8;
+  
+  if (applyBtnEl) {
+    const computed = window.getComputedStyle(applyBtnEl);
+    const h = parseInt(computed.height, 10);
+    if (h > 0 && h < 100) {
+      btnHeight = h;
+      btnFontSize = Math.max(12, Math.min(16, Math.round(h * 0.35)));
+      btnRadius = parseInt(computed.borderRadius, 10) || 8;
+    }
+  }
+
+  const btn = document.createElement('button');
+  btn.id = 'ironcv-tailor-btn';
+  btn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0">
+      <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+    </svg>
+    <span>Tailor with IronCV</span>
+  `;
+  btn.style.cssText = `
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    color: #fff;
+    border: none;
+    border-radius: ${btnRadius}px;
+    padding: 0 12px;
+    height: ${btnHeight}px;
+    font-size: ${btnFontSize}px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    box-shadow: 0 0 8px rgba(124,58,237,0.6), 0 0 16px rgba(124,58,237,0.3);
+    margin-left: 8px;
+    vertical-align: middle;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+    z-index: 100;
+    animation: ironcv-glow 2s ease-in-out infinite;
+  `;
+
+  btn.onmouseenter = () => {
+    btn.style.transform = 'scale(1.05)';
+    btn.style.boxShadow = '0 0 16px rgba(124,58,237,0.9), 0 0 32px rgba(124,58,237,0.6)';
+    btn.style.animation = 'none';
+  };
+  btn.onmouseleave = () => {
+    btn.style.transform = 'scale(1)';
+    btn.style.boxShadow = '0 0 8px rgba(124,58,237,0.6), 0 0 16px rgba(124,58,237,0.3)';
+    btn.style.animation = 'ironcv-glow 2s ease-in-out infinite';
+  };
+
+  btn.addEventListener('click', () => {
+    const job = extractIndeedJob();
+    const jd = job?.jobDescription || '';
+    if (!jd) {
+      alert('IronCV: Could not extract the job description.');
+      return;
+    }
+    const encoded = btoa(encodeURIComponent(jd));
+    const url = `https://ironcv.com/generate#ext-jd=${encoded}`;
+    window.open(url, '_blank');
+  });
+
+  // Insert beside the apply button
+  if (anchorEl.parentElement) {
+    anchorEl.parentElement.insertBefore(btn, anchorEl.nextSibling);
+  } else {
+    anchorEl.appendChild(btn);
+  }
+  console.log('[IronCV] Indeed Tailor button injected');
+}
+
+// ── Indeed observer ───────────────────────────────────────────────────────────
+(function() {
+  if (!window.location.href.includes('indeed.com')) return;
+
+  const observer = new MutationObserver(() => {
+    injectIndeedButton();
+  });
+
+  observer.observe(document.body, { subtree: true, childList: true });
+  
+  setTimeout(injectIndeedButton, 1000);
+  setTimeout(injectIndeedButton, 2500);
+
+  console.log('[IronCV] MutationObserver started for Indeed');
+})();
+
 // MutationObserver for LinkedIn SPA navigation + button injection
 (function() {
   if (!window.location.href.includes('linkedin.com')) return;
