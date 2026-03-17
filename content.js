@@ -447,14 +447,16 @@ function injectLinkedInButton() {
     }
   }
   
-  // Fallback: find any button with "Apply" in text content
+  // Fallback: find any element (button, a, div, span) with "Apply" in text content
   if (!anchorEl) {
-    const allButtons = document.querySelectorAll('button');
-    for (const btn of allButtons) {
-      const text = btn.textContent?.trim() || '';
-      if (text.includes('Apply') && !text.includes('IronCV')) {
-        anchorEl = btn.closest('div') || btn.parentElement;
-        matchedSelector = 'text-match: ' + text.substring(0, 30);
+    // LinkedIn uses <a> tags styled as buttons on /jobs/view/ pages
+    const candidates = document.querySelectorAll('button, a, div, span');
+    for (const el of candidates) {
+      const text = el.textContent?.trim() || '';
+      // Match "Easy Apply" or "Apply" but not our own button
+      if ((text === 'Easy Apply' || text === 'Apply') && !text.includes('IronCV')) {
+        anchorEl = el.closest('div') || el.parentElement;
+        matchedSelector = 'text-match: ' + el.tagName + ' "' + text + '"';
         break;
       }
     }
