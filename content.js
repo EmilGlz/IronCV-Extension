@@ -473,7 +473,7 @@ function injectLinkedInButton() {
   btn.id = 'ironcv-tailor-btn';
   // SVG lightning icon (consistent rendering vs emoji)
   btn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0">
+    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0">
       <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
     </svg>
     <span>Tailor with IronCV</span>
@@ -482,19 +482,19 @@ function injectLinkedInButton() {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 5px;
     background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
     color: #fff;
     border: none;
-    border-radius: 24px;
-    padding: 0 16px;
-    height: 40px;
-    font-size: 16px;
+    border-radius: 16px;
+    padding: 0 12px;
+    height: 32px;
+    font-size: 14px;
     font-weight: 600;
     line-height: 1;
     cursor: pointer;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    box-shadow: 0 2px 8px rgba(124,58,237,0.35);
+    box-shadow: 0 1px 4px rgba(124,58,237,0.3);
     margin-left: 8px;
     vertical-align: middle;
     transition: transform 0.1s ease, box-shadow 0.1s ease;
