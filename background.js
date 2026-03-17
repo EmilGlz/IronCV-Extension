@@ -83,6 +83,7 @@ async function handleCheckAts(resume, jobDescription) {
 // Fetch master resume (primary) for ATS scoring
 async function handleFetchLastResume() {
   const { token } = await chrome.storage.sync.get(['token']);
+  console.log('[IronCV] fetchLastResume - token exists:', !!token);
 
   if (!token) {
     throw new Error('Not signed in');
@@ -94,14 +95,20 @@ async function handleFetchLastResume() {
     headers: { 'Authorization': `Bearer ${token}` }
   });
 
+  console.log('[IronCV] fetchLastResume - response status:', response.status);
+
   if (!response.ok) {
+    const errorText = await response.text();
+    console.log('[IronCV] fetchLastResume - error response:', errorText);
     throw new Error('Failed to fetch master resume');
   }
 
   const data = await response.json();
+  console.log('[IronCV] fetchLastResume - data:', JSON.stringify(data).substring(0, 200));
 
   // API returns { hasResume: false } when no master resume set
   if (!data.hasResume || !data.resumeText) {
+    console.log('[IronCV] fetchLastResume - no resume found, hasResume:', data.hasResume);
     return { resumeText: null, resumeTitle: null, resumeCount: 0 };
   }
 
