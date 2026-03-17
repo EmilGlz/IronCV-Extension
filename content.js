@@ -785,12 +785,19 @@ function injectIndeedButton() {
     debounceTimer = setTimeout(() => {
       const currentUrl = window.location.href;
 
-      // SPA navigation → new job → remove old button + notify popup
+      // SPA navigation → new job → remove old button + retry injection
       if (currentUrl !== lastUrl) {
         lastUrl = currentUrl;
         const old = document.getElementById('ironcv-tailor-btn');
         if (old) old.remove();
         console.log('[IronCV] LinkedIn SPA navigation detected:', currentUrl);
+        
+        // Retry injection multiple times as new job panel renders
+        setTimeout(injectLinkedInButton, 300);
+        setTimeout(injectLinkedInButton, 800);
+        setTimeout(injectLinkedInButton, 1500);
+        setTimeout(injectLinkedInButton, 2500);
+        
         const job = extractJobDetails();
         if (job) chrome.runtime.sendMessage({ action: 'jobUpdated', job });
       }
