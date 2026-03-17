@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "IronCV Job Tracker",
-  "version": "1.0.0",
-  "description": "Save jobs from LinkedIn, Indeed, and Glassdoor to your IronCV job tracker with one click",
+  "name": "IronCV — Resume Copilot",
+  "version": "2.0.0",
+  "description": "Check your ATS score, tailor your resume, and save jobs from LinkedIn, Indeed, and Glassdoor — all in one click.",
   "permissions": [
     "activeTab",
     "storage",
