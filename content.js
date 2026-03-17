@@ -41,9 +41,22 @@ function getTextFromSelectors(selectors, maxLen) {
 
 // LinkedIn job description selectors
 function getLinkedInJobDescription() {
-  // LinkedIn now uses obfuscated classes — find description by content heuristics.
-  // The job description div is the largest text block containing "About the job",
-  // with no nav/header content present.
+  // First try known right-panel containers (works on both /jobs/view/ and collections)
+  const panelSelectors = [
+    '.jobs-details__main-content',
+    '.jobs-description__content',
+    '.job-details-jobs-unified-top-card__job-description',
+    '.jobs-box__html-content',
+    '#job-details',
+  ];
+  for (const sel of panelSelectors) {
+    const el = document.querySelector(sel);
+    if (el && el.innerText?.trim().length > 200) {
+      return el.innerText.trim().substring(0, 8000);
+    }
+  }
+
+  // Fallback: heuristic — find largest "About the job" block
   const NAV_SIGNALS = ['Skip to main', 'My Network', 'Easy Apply', 'Notifications'];
 
   const candidates = [...document.querySelectorAll('div')]
@@ -91,22 +104,40 @@ function getGlassdoorJobDescription() {
 // LinkedIn Job Parser
 function extractLinkedInJob() {
   try {
+    const url = window.location.href;
+
+    // On collections/search pages, derive jobUrl from currentJobId query param
+    const jobIdMatch = url.match(/[?&]currentJobId=(\d+)/);
+    const jobId = jobIdMatch ? jobIdMatch[1] : null;
+
     const job = {
-      jobUrl: window.location.href,
+      jobUrl: jobId ? `https://www.linkedin.com/jobs/view/${jobId}/` : url,
       source: 'LinkedIn'
     };
 
-    // Job Title — LinkedIn uses obfuscated hashed classes that change every deploy.
-    // Most reliable: parse document.title.
-    // Format 1: "Job Title | Company | LinkedIn"
-    // Format 2: "Job Title at Company | LinkedIn"
-    const rawTitle = document.title || '';
-    const pipeMatch = rawTitle.match(/^(.+?)\s*\|\s*(.+?)\s*\|\s*LinkedIn/i);
-    const atMatch   = rawTitle.match(/^(.+?)\s+(?:at|[-–])\s+(.+?)\s*[|\-–]/);
-    const match = pipeMatch || atMatch;
-    if (match) {
-      job.jobTitle   = match[1].trim();
-      job.companyName = match[2].trim();
+    // ── Job Title ──────────────────────────────────────────────────────────
+    // Priority 1: right-panel h1 (works on both /jobs/view/ and collections split-pane)
+    const panelH1 = document.querySelector(
+      '.jobs-details h1, ' +
+      '.job-details-jobs-unified-top-card__job-title h1, ' +
+      '.jobs-unified-top-card__job-title h1, ' +
+      '[class*="job-details"] h1, ' +
+      '.scaffold-layout__detail h1'
+    );
+    if (panelH1 && panelH1.textContent.trim().length > 2) {
+      job.jobTitle = panelH1.textContent.trim();
+    }
+
+    // Priority 2: document.title (works on /jobs/view/ only)
+    if (!job.jobTitle) {
+      const rawTitle = document.title || '';
+      const pipeMatch = rawTitle.match(/^(.+?)\s*\|\s*(.+?)\s*\|\s*LinkedIn/i);
+      const atMatch   = rawTitle.match(/^(.+?)\s+(?:at|[-–])\s+(.+?)\s*[|\-–]/);
+      const match = pipeMatch || atMatch;
+      if (match) {
+        job.jobTitle    = match[1].trim();
+        job.companyName = match[2].trim();
+      }
     }
 
     // Fallback: try known selectors (may work on older LinkedIn versions)
@@ -128,16 +159,14 @@ function extractLinkedInJob() {
       }
     }
 
-    // Company Name — already parsed from document.title above.
-    // Fallback: try meta tags and known selectors
-    if (!job.companyName) {
-      // Try og:title meta: "Job Title at Company | LinkedIn"
-      const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content') || '';
-      const ogMatch = ogTitle.match(/^.+?\s+(?:at|[-–])\s+(.+?)(?:\s*[|\-–]|$)/);
-      if (ogMatch) job.companyName = ogMatch[1].trim();
-    }
+    // Company Name — try right panel first, then meta/title fallbacks
     if (!job.companyName) {
       const companySelectors = [
+        // Right panel (collections / split-pane view)
+        '.jobs-details .jobs-unified-top-card__company-name a',
+        '.jobs-details .job-details-jobs-unified-top-card__company-name a',
+        '.scaffold-layout__detail .jobs-unified-top-card__company-name',
+        // Direct job page
         '.topcard__org-name-link',
         '.top-card-layout__second-subline a',
         'a[data-tracking-control-name="public_jobs_topcard-org-name"]',
@@ -146,12 +175,17 @@ function extractLinkedInJob() {
         '[class*="company-name"]'
       ];
       for (const selector of companySelectors) {
-        const element = document.querySelector(selector);
-        if (element && element.textContent.trim().length > 1) {
-          job.companyName = element.textContent.trim();
+        const el = document.querySelector(selector);
+        if (el && el.textContent.trim().length > 1) {
+          job.companyName = el.textContent.trim();
           break;
         }
       }
+    }
+    if (!job.companyName) {
+      const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content') || '';
+      const ogMatch = ogTitle.match(/^.+?\s+(?:at|[-–])\s+(.+?)(?:\s*[|\-–]|$)/);
+      if (ogMatch) job.companyName = ogMatch[1].trim();
     }
 
     // Location — try meta description first, then selectors

@@ -242,7 +242,10 @@ async function init() {
     tab.url.includes('glassdoor.com')
   );
 
-  if (!isJobPage) {
+  // LinkedIn collections page with a selected job in the right panel
+  const isLinkedInCollections = tab.url.includes('linkedin.com/jobs/') && tab.url.includes('currentJobId=');
+
+  if (!isJobPage && !isLinkedInCollections) {
     showState('noJob');
     return;
   }
