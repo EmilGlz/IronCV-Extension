@@ -436,21 +436,30 @@ function injectLinkedInButton() {
   }
   if (!anchorEl) return; // job panel not rendered yet — observer will retry
 
-  // Build the button
+  // Build the button — match LinkedIn's "Easy Apply" button sizing
   const btn = document.createElement('button');
   btn.id = 'ironcv-tailor-btn';
-  btn.innerHTML = '⚡ Tailor with IronCV';
+  // SVG lightning icon (consistent rendering vs emoji)
+  btn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0">
+      <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+    </svg>
+    <span>Tailor with IronCV</span>
+  `;
   btn.style.cssText = `
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
     color: #fff;
     border: none;
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-size: 14px;
+    border-radius: 24px;
+    padding: 0 16px;
+    height: 40px;
+    font-size: 16px;
     font-weight: 600;
+    line-height: 1;
     cursor: pointer;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     box-shadow: 0 2px 8px rgba(124,58,237,0.35);
