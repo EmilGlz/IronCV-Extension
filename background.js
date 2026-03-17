@@ -88,66 +88,29 @@ async function handleFetchLastResume() {
     throw new Error('Not signed in');
   }
 
-  // Try master resume list first — user's saved base resume is most accurate for ATS scoring
-  try {
-    const listResponse = await fetch('https://ironcv-api-y89t.onrender.com/api/Resume/master/list', {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+  // GET /api/Resume/master returns primary resume with ResumeText included
+  const response = await fetch('https://ironcv-api-y89t.onrender.com/api/Resume/master', {
+    method: 'GET',
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
 
-    if (listResponse.ok) {
-      const resumes = await listResponse.json();
-      if (resumes && resumes.length > 0) {
-        // Prefer primary resume, fall back to most recently updated
-        const primary = resumes.find(r => r.isPrimary) || resumes[0];
-
-        // Fetch preview text for the selected resume
-        const previewResponse = await fetch(
-          `https://ironcv-api-y89t.onrender.com/api/Resume/master/${primary.id}/preview`,
-          { headers: { 'Authorization': `Bearer ${token}` } }
-        );
-
-        if (previewResponse.ok) {
-          const previewData = await previewResponse.json();
-          if (previewData.resumeText) {
-            return {
-              resumeText: previewData.resumeText,
-              resumeTitle: primary.fileName || 'Master Resume',
-              resumeCount: resumes.length,
-              source: 'master'
-            };
-          }
-        }
-      }
-    }
-  } catch (err) {
-    console.log('[IronCV] Master resume fetch failed, trying history fallback:', err);
+  if (!response.ok) {
+    throw new Error('Failed to fetch master resume');
   }
 
-  // Fallback: try last generated resume from dashboard
-  try {
-    const dashResponse = await fetch('https://ironcv-api-y89t.onrender.com/api/Resume/dashboard', {
-      method: 'GET',
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+  const data = await response.json();
 
-    if (dashResponse.ok) {
-      const data = await dashResponse.json();
-      const history = data.History || data.history || [];
-      if (history.length > 0 && history[0]?.resumeText) {
-        return {
-          resumeText: history[0].resumeText,
-          resumeTitle: history[0].title || 'Last Generated Resume',
-          resumeCount: history.length,
-          source: 'history'
-        };
-      }
-    }
-  } catch (err) {
-    console.log('[IronCV] Dashboard fallback failed:', err);
+  // API returns { hasResume: false } when no master resume set
+  if (!data.hasResume || !data.resumeText) {
+    return { resumeText: null, resumeTitle: null, resumeCount: 0 };
   }
 
-  return { resumeText: null, resumeTitle: null, resumeCount: 0 };
+  return {
+    resumeText: data.resumeText,
+    resumeTitle: data.fileName || 'Master Resume',
+    resumeCount: 1,
+    source: 'master'
+  };
 }
 
 // Save job to IronCV tracker
