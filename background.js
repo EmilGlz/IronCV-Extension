@@ -100,6 +100,12 @@ async function handleFetchLastResume() {
   if (!response.ok) {
     const errorText = await response.text();
     console.log('[IronCV] fetchLastResume - error response:', errorText);
+    
+    // Token expired/invalid — clear it so user gets prompted to sign in again
+    if (response.status === 401) {
+      await chrome.storage.sync.remove('token');
+      throw new Error('Session expired - please sign in again');
+    }
     throw new Error('Failed to fetch master resume');
   }
 

@@ -154,7 +154,18 @@ async function runAtsCheck(job) {
   try {
     const resumeData = await chrome.runtime.sendMessage({ action: 'fetchLastResume' });
 
-    if (resumeData.error || !resumeData.resumeText) {
+    if (resumeData.error) {
+      atsLoading.classList.add('hidden');
+      // If session expired, show sign-in state
+      if (resumeData.error.includes('Session expired') || resumeData.error.includes('sign in')) {
+        showState('notSignedIn');
+        return;
+      }
+      atsResumeLabel.textContent = resumeData.error;
+      return;
+    }
+    
+    if (!resumeData.resumeText) {
       atsLoading.classList.add('hidden');
       atsResumeLabel.textContent = 'Add a master resume on IronCV first';
       return;
