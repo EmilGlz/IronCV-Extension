@@ -247,34 +247,72 @@ function extractIndeedJob() {
       source: 'Indeed'
     };
 
-    // Job Title
-    const titleElement = document.querySelector('.jobsearch-JobInfoHeader-title, h1');
-    if (titleElement) {
-      job.jobTitle = titleElement.textContent.trim();
+    // Job Title — try multiple selectors and fallbacks
+    const titleSelectors = [
+      '.jobsearch-JobInfoHeader-title',
+      '[data-testid="jobsearch-JobInfoHeader-title"]',
+      'h1[class*="JobInfoHeader"]',
+      'h1',
+    ];
+    for (const sel of titleSelectors) {
+      const el = document.querySelector(sel);
+      if (el && el.textContent.trim().length > 2) {
+        job.jobTitle = el.textContent.trim();
+        break;
+      }
     }
 
-    // Company Name
-    const companyElement = document.querySelector('[data-company-name="true"], .jobsearch-InlineCompanyRating-companyHeader a, .jobsearch-CompanyInfoContainer a');
-    if (companyElement) {
-      job.companyName = companyElement.textContent.trim();
+    // Company Name — try multiple selectors
+    const companySelectors = [
+      '[data-testid="inlineHeader-companyName"] a',
+      '[data-testid="inlineHeader-companyName"]',
+      '[data-company-name="true"]',
+      '.jobsearch-InlineCompanyRating-companyHeader a',
+      '.jobsearch-CompanyInfoContainer a',
+      '[class*="CompanyName"] a',
+      '[class*="companyName"]',
+    ];
+    for (const sel of companySelectors) {
+      const el = document.querySelector(sel);
+      if (el && el.textContent.trim().length > 1) {
+        job.companyName = el.textContent.trim();
+        break;
+      }
     }
 
     // Location
-    const locationElement = document.querySelector('[data-testid="jobsearch-JobInfoHeader-companyLocation"], .jobsearch-JobInfoHeader-subtitle div');
-    if (locationElement) {
-      job.location = locationElement.textContent.trim();
+    const locationSelectors = [
+      '[data-testid="inlineHeader-companyLocation"]',
+      '[data-testid="jobsearch-JobInfoHeader-companyLocation"]',
+      '.jobsearch-JobInfoHeader-subtitle div',
+      '[class*="companyLocation"]',
+    ];
+    for (const sel of locationSelectors) {
+      const el = document.querySelector(sel);
+      if (el && el.textContent.trim().length > 2) {
+        job.location = el.textContent.trim();
+        break;
+      }
     }
 
     // Salary
-    const salaryElement = document.querySelector('.jobsearch-JobMetadataHeader-item, [data-testid="attribute_snippet_testid"]');
-    if (salaryElement && salaryElement.textContent.includes('$')) {
-      const salaryText = salaryElement.textContent;
-      const salaryRange = parseSalary(salaryText);
-      if (salaryRange) {
-        job.salaryMin = salaryRange.min;
-        job.salaryMax = salaryRange.max;
-      } else {
-        job.salary = salaryText.trim();
+    const salarySelectors = [
+      '[data-testid="attribute_snippet_testid"]',
+      '.jobsearch-JobMetadataHeader-item',
+      '[class*="salary"]',
+    ];
+    for (const sel of salarySelectors) {
+      const el = document.querySelector(sel);
+      if (el && el.textContent.includes('$')) {
+        const salaryText = el.textContent;
+        const salaryRange = parseSalary(salaryText);
+        if (salaryRange) {
+          job.salaryMin = salaryRange.min;
+          job.salaryMax = salaryRange.max;
+        } else {
+          job.salary = salaryText.trim();
+        }
+        break;
       }
     }
 
