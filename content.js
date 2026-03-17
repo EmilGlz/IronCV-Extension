@@ -696,8 +696,11 @@ function injectIndeedButton() {
     window.open(url, '_blank');
   });
 
-  // Insert beside the apply button
-  if (anchorEl.parentElement) {
+  // Insert inline with the apply button
+  if (applyBtnEl && applyBtnEl.parentElement) {
+    // Insert right after the actual apply button element
+    applyBtnEl.parentElement.insertBefore(btn, applyBtnEl.nextSibling);
+  } else if (anchorEl.parentElement) {
     anchorEl.parentElement.insertBefore(btn, anchorEl.nextSibling);
   } else {
     anchorEl.appendChild(btn);
