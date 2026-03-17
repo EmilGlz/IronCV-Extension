@@ -495,7 +495,7 @@ function injectLinkedInButton() {
     cursor: pointer;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     box-shadow: 0 1px 4px rgba(124,58,237,0.3);
-    margin-left: 8px;
+    margin-left: 4px;
     vertical-align: middle;
     transition: transform 0.1s ease, box-shadow 0.1s ease;
     white-space: nowrap;
