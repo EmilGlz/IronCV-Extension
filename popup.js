@@ -161,7 +161,8 @@ async function runAtsCheck(job) {
     }
 
     if (resumeData.resumeTitle) {
-      atsResumeLabel.textContent = `Using: ${resumeData.resumeTitle}`;
+      const prefix = resumeData.source === 'master' ? 'Master resume: ' : 'Using: ';
+      atsResumeLabel.textContent = prefix + resumeData.resumeTitle;
     }
 
     const atsData = await chrome.runtime.sendMessage({
