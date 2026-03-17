@@ -1,12 +1,21 @@
 const sharp = require('C:/Users/emilb/AppData/Roaming/npm/node_modules/openclaw/node_modules/sharp');
 const path = require('path');
 
-// IronCV icon: crimson circle with white "I" letter made of rectangles
+// IronCV icon: violet rounded square with white I-beam
 const svg = `<svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="64" cy="64" r="62" fill="#C41E3A"/>
-  <rect x="52" y="26" width="12" height="76" rx="3" fill="white"/>
-  <rect x="34" y="26" width="48" height="13" rx="3" fill="white"/>
-  <rect x="34" y="89" width="48" height="13" rx="3" fill="white"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <!-- Top flange -->
+  <rect x="22" y="24" width="84" height="20" rx="6" fill="white"/>
+  <!-- Stem -->
+  <rect x="52" y="44" width="24" height="40" fill="white"/>
+  <!-- Bottom flange -->
+  <rect x="22" y="84" width="84" height="20" rx="6" fill="white"/>
 </svg>`;
 
 const svgBuffer = Buffer.from(svg);
