@@ -51,11 +51,17 @@ function formatSalary(min, max, raw) {
   return null;
 }
 
+function isGlassdoorUrl(url) {
+  return url.includes('glassdoor.com') || url.includes('glassdoor.ca') || 
+         url.includes('glassdoor.co.uk') || url.includes('glassdoor.de') || 
+         url.includes('glassdoor.fr') || url.includes('glassdoor.co.in');
+}
+
 function getSourceLabel(url) {
   if (!url) return '';
   if (url.includes('linkedin.com')) return 'LinkedIn';
   if (url.includes('indeed.com'))   return 'Indeed';
-  if (url.includes('glassdoor.com')) return 'Glassdoor';
+  if (isGlassdoorUrl(url)) return 'Glassdoor';
   return 'Job Board';
 }
 
@@ -251,7 +257,7 @@ async function init() {
     tab.url.includes('linkedin.com/jobs') ||
     tab.url.includes('linkedin.com/job/') ||
     tab.url.includes('indeed.com') ||
-    tab.url.includes('glassdoor.com')
+    isGlassdoorUrl(tab.url)
   );
 
   // LinkedIn collections page with a selected job in the right panel
