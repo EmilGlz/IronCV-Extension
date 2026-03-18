@@ -1061,9 +1061,32 @@ function injectGlassdoorButton() {
     window.open(url, '_blank');
   });
 
-  // Insert next to Apply button
-  if (applyBtnEl && applyBtnEl.parentElement) {
-    applyBtnEl.parentElement.insertBefore(btn, applyBtnEl.nextSibling);
+  // Insert inline next to Apply button - create flex wrapper if needed
+  if (applyBtnEl) {
+    const parent = applyBtnEl.parentElement;
+    
+    // Check if parent is already flex row
+    const parentStyle = parent ? window.getComputedStyle(parent) : null;
+    const isFlexRow = parentStyle?.display === 'flex' && 
+                      (parentStyle.flexDirection === 'row' || parentStyle.flexDirection === '');
+    
+    if (isFlexRow) {
+      // Parent is already flex row, just insert after apply button
+      parent.insertBefore(btn, applyBtnEl.nextSibling);
+    } else {
+      // Wrap apply button and our button in a flex container
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;';
+      
+      // Insert wrapper where apply button was
+      if (parent) {
+        parent.insertBefore(wrapper, applyBtnEl);
+        wrapper.appendChild(applyBtnEl);
+        wrapper.appendChild(btn);
+      } else {
+        applyBtnEl.insertAdjacentElement('afterend', btn);
+      }
+    }
   } else if (anchorEl) {
     anchorEl.appendChild(btn);
   }
