@@ -18,7 +18,9 @@ function extractJobDetails() {
     return extractLinkedInJob();
   } else if (url.includes('indeed.com')) {
     return extractIndeedJob();
-  } else if (url.includes('glassdoor.com')) {
+  } else if (url.includes('glassdoor.com') || url.includes('glassdoor.ca') || 
+             url.includes('glassdoor.co.uk') || url.includes('glassdoor.de') || 
+             url.includes('glassdoor.fr') || url.includes('glassdoor.co.in')) {
     return extractGlassdoorJob();
   }
 
@@ -896,8 +898,15 @@ function injectIndeedButton() {
 }
 
 // ── Glassdoor button injection ────────────────────────────────────────────────
+function isGlassdoor() {
+  const url = window.location.href;
+  return url.includes('glassdoor.com') || url.includes('glassdoor.ca') || 
+         url.includes('glassdoor.co.uk') || url.includes('glassdoor.de') || 
+         url.includes('glassdoor.fr') || url.includes('glassdoor.co.in');
+}
+
 function injectGlassdoorButton() {
-  if (!window.location.href.includes('glassdoor.com')) return;
+  if (!isGlassdoor()) return;
   if (document.getElementById('ironcv-tailor-btn')) return;
 
   // Find the "Easy Apply" button on Glassdoor (green button with lightning icon)
@@ -1060,7 +1069,7 @@ function injectGlassdoorButton() {
 
 // ── Glassdoor observer ────────────────────────────────────────────────────────
 (function() {
-  if (!window.location.href.includes('glassdoor.com')) return;
+  if (!isGlassdoor()) return;
 
   const observer = new MutationObserver(() => {
     injectGlassdoorButton();

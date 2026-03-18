@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "IronCV — Resume Copilot",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Check your ATS score, tailor your resume, and save jobs from LinkedIn, Indeed, and Glassdoor — all in one click.",
   "permissions": [
     "activeTab",
@@ -13,7 +13,13 @@
     "https://*.indeed.com/*",
     "https://indeed.com/*",
     "https://*.glassdoor.com/*",
+    "https://*.glassdoor.ca/*",
+    "https://*.glassdoor.co.uk/*",
+    "https://*.glassdoor.de/*",
+    "https://*.glassdoor.fr/*",
+    "https://*.glassdoor.co.in/*",
     "https://glassdoor.com/*",
+    "https://glassdoor.ca/*",
     "https://ironcv.com/*",
     "https://ironcv-api-y89t.onrender.com/*"
   ],
@@ -38,7 +44,13 @@
         "https://*.indeed.com/*",
         "https://indeed.com/*",
         "https://*.glassdoor.com/*",
-        "https://glassdoor.com/*"
+        "https://*.glassdoor.ca/*",
+        "https://*.glassdoor.co.uk/*",
+        "https://*.glassdoor.de/*",
+        "https://*.glassdoor.fr/*",
+        "https://*.glassdoor.co.in/*",
+        "https://glassdoor.com/*",
+        "https://glassdoor.ca/*"
       ],
       "all_frames": true,
       "js": ["content.js"],
