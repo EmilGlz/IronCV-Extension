@@ -94,11 +94,53 @@ function getIndeedJobDescription() {
 
 // Glassdoor job description selectors
 function getGlassdoorJobDescription() {
-  return getTextFromSelectors([
-    '[class*=JobDetails_jobDescription]',
+  // Try multiple selector patterns - Glassdoor changes their classes frequently
+  const selectors = [
+    // 2024-2026 patterns
+    '[data-test="jobDescriptionContent"]',
+    '[class*="JobDetails_jobDescription"]',
+    '[class*="jobDescriptionContent"]',
+    '.JobDetails_jobDescription__6VeBn',
+    '.JobDetails_jobDescriptionWrapper__BTDTA',
+    // Legacy patterns
     '.desc',
-    '[data-test=job-description]'
-  ], 8000);
+    '[data-test="job-description"]',
+    '.jobDescription',
+    '#JobDescriptionContainer',
+    // Fallback: any large div with job-related class
+    '[class*="description"]',
+    '[class*="Description"]',
+  ];
+  
+  for (const sel of selectors) {
+    const el = document.querySelector(sel);
+    if (el) {
+      const text = el.innerText?.trim();
+      if (text && text.length > 200) {
+        return text.substring(0, 8000);
+      }
+    }
+  }
+  
+  // Heuristic fallback: find the largest text block that looks like a job description
+  const candidates = [...document.querySelectorAll('div, section')]
+    .filter(el => {
+      const text = el.innerText?.trim() || '';
+      return text.length > 500 && 
+             text.length < 15000 &&
+             (text.toLowerCase().includes('responsibilities') ||
+              text.toLowerCase().includes('requirements') ||
+              text.toLowerCase().includes('qualifications') ||
+              text.toLowerCase().includes('experience') ||
+              text.toLowerCase().includes('about the role'));
+    })
+    .sort((a, b) => b.innerText.length - a.innerText.length);
+  
+  if (candidates.length > 0) {
+    return candidates[0].innerText.trim().substring(0, 8000);
+  }
+  
+  return null;
 }
 
 // LinkedIn Job Parser
@@ -335,39 +377,88 @@ function extractGlassdoorJob() {
       source: 'Glassdoor'
     };
 
-    // Job Title
-    const titleElement = document.querySelector('[data-test="job-title"], h1');
-    if (titleElement) {
-      job.jobTitle = titleElement.textContent.trim();
+    // Job Title - multiple selector patterns
+    const titleSelectors = [
+      '[data-test="jobTitle"]',
+      '[data-test="job-title"]',
+      '[class*="JobDetails_jobTitle"]',
+      '[class*="jobTitle"]',
+      '.JobDetails_jobTitle__Rw_gn',
+      'h1[class*="heading"]',
+      'h1',
+    ];
+    for (const sel of titleSelectors) {
+      const el = document.querySelector(sel);
+      if (el && el.textContent.trim().length > 2) {
+        job.jobTitle = el.textContent.trim();
+        break;
+      }
     }
 
-    // Company Name
-    const companyElement = document.querySelector('[data-test="employer-name"], .EmployerProfile_employerName__Xemli');
-    if (companyElement) {
-      job.companyName = companyElement.textContent.trim();
+    // Company Name - multiple selector patterns
+    const companySelectors = [
+      '[data-test="employerName"]',
+      '[data-test="employer-name"]',
+      '[class*="EmployerProfile_employerName"]',
+      '[class*="employerName"]',
+      '[class*="companyName"]',
+      'a[href*="/Overview/"]',
+    ];
+    for (const sel of companySelectors) {
+      const el = document.querySelector(sel);
+      if (el && el.textContent.trim().length > 1) {
+        job.companyName = el.textContent.trim();
+        break;
+      }
     }
 
-    // Location
-    const locationElement = document.querySelector('[data-test="location"], .JobDetails_location__mSg5h');
-    if (locationElement) {
-      job.location = locationElement.textContent.trim();
+    // Location - multiple selector patterns
+    const locationSelectors = [
+      '[data-test="location"]',
+      '[data-test="emp-location"]',
+      '[class*="JobDetails_location"]',
+      '[class*="location"]',
+      '[class*="Location"]',
+    ];
+    for (const sel of locationSelectors) {
+      const el = document.querySelector(sel);
+      if (el && el.textContent.trim().length > 2) {
+        job.location = el.textContent.trim();
+        break;
+      }
     }
 
-    // Salary
-    const salaryElement = document.querySelector('[data-test="detailSalary"], .JobDetails_salary__6FTOE');
-    if (salaryElement) {
-      const salaryText = salaryElement.textContent;
-      const salaryRange = parseSalary(salaryText);
-      if (salaryRange) {
-        job.salaryMin = salaryRange.min;
-        job.salaryMax = salaryRange.max;
-      } else {
-        job.salary = salaryText.trim();
+    // Salary - multiple selector patterns
+    const salarySelectors = [
+      '[data-test="detailSalary"]',
+      '[data-test="salary"]',
+      '[class*="JobDetails_salary"]',
+      '[class*="salary"]',
+      '[class*="Salary"]',
+    ];
+    for (const sel of salarySelectors) {
+      const el = document.querySelector(sel);
+      if (el && el.textContent.includes('$')) {
+        const salaryText = el.textContent;
+        const salaryRange = parseSalary(salaryText);
+        if (salaryRange) {
+          job.salaryMin = salaryRange.min;
+          job.salaryMax = salaryRange.max;
+        } else {
+          job.salary = salaryText.trim();
+        }
+        break;
       }
     }
 
     // Job Description
     job.jobDescription = getGlassdoorJobDescription();
+
+    // Validate we got something
+    if (!job.jobTitle && !job.companyName && !job.jobDescription) {
+      console.warn('[IronCV] Could not extract Glassdoor job details - UI may have changed');
+      return null;
+    }
 
     console.log('[IronCV] Extracted Glassdoor job:', job);
     return job;
@@ -755,6 +846,163 @@ function injectIndeedButton() {
   }
   console.log('[IronCV] Indeed Tailor button injected');
 }
+
+// ── Glassdoor button injection ────────────────────────────────────────────────
+function injectGlassdoorButton() {
+  if (!window.location.href.includes('glassdoor.com')) return;
+  if (document.getElementById('ironcv-tailor-btn')) return;
+
+  // Find the Apply button on Glassdoor
+  const applySelectors = [
+    'button[data-test="applyButton"]',
+    'button[data-test="apply-button"]',
+    '[class*="ApplyButton"]',
+    '[class*="applyButton"]',
+    'button[class*="apply"]',
+    'a[class*="apply"]',
+  ];
+
+  let applyBtnEl = null;
+  let anchorEl = null;
+  
+  for (const sel of applySelectors) {
+    const el = document.querySelector(sel);
+    if (el) {
+      applyBtnEl = el;
+      anchorEl = el.closest('div') || el.parentElement;
+      break;
+    }
+  }
+
+  // Fallback: find any button/link with "Apply" text
+  if (!anchorEl) {
+    const candidates = document.querySelectorAll('button, a');
+    for (const el of candidates) {
+      const text = el.textContent?.trim() || '';
+      if ((text === 'Apply' || text === 'Easy Apply' || text === 'Apply Now') && !text.includes('IronCV')) {
+        applyBtnEl = el;
+        anchorEl = el.closest('div') || el.parentElement;
+        break;
+      }
+    }
+  }
+
+  if (!anchorEl) {
+    console.log('[IronCV] Glassdoor: No apply button found yet');
+    return;
+  }
+
+  // Inject keyframes for glow animation (once)
+  if (!document.getElementById('ironcv-glow-style')) {
+    const style = document.createElement('style');
+    style.id = 'ironcv-glow-style';
+    style.textContent = `
+      @keyframes ironcv-glow {
+        0%, 100% { box-shadow: 0 0 8px rgba(124,58,237,0.6), 0 0 16px rgba(124,58,237,0.3); }
+        50% { box-shadow: 0 0 12px rgba(124,58,237,0.8), 0 0 24px rgba(124,58,237,0.5); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Match apply button size
+  let btnHeight = 40;
+  let btnFontSize = 14;
+  let btnRadius = 8;
+  
+  if (applyBtnEl) {
+    const computed = window.getComputedStyle(applyBtnEl);
+    const h = parseInt(computed.height, 10);
+    if (h > 0 && h < 100) {
+      btnHeight = h;
+      btnFontSize = Math.max(12, Math.min(16, Math.round(h * 0.35)));
+      btnRadius = parseInt(computed.borderRadius, 10) || 8;
+    }
+  }
+
+  const btn = document.createElement('button');
+  btn.id = 'ironcv-tailor-btn';
+  btn.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0">
+      <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+    </svg>
+    <span>Tailor with IronCV</span>
+  `;
+  btn.style.cssText = `
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+    color: #fff;
+    border: none;
+    border-radius: ${btnRadius}px;
+    padding: 0 12px;
+    height: ${btnHeight}px;
+    font-size: ${btnFontSize}px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    box-shadow: 0 0 8px rgba(124,58,237,0.6), 0 0 16px rgba(124,58,237,0.3);
+    margin-left: 8px;
+    vertical-align: middle;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+    z-index: 100;
+    animation: ironcv-glow 2s ease-in-out infinite;
+  `;
+
+  btn.onmouseenter = () => {
+    btn.style.transform = 'scale(1.05)';
+    btn.style.boxShadow = '0 0 16px rgba(124,58,237,0.9), 0 0 32px rgba(124,58,237,0.6)';
+    btn.style.animation = 'none';
+  };
+  btn.onmouseleave = () => {
+    btn.style.transform = 'scale(1)';
+    btn.style.boxShadow = '0 0 8px rgba(124,58,237,0.6), 0 0 16px rgba(124,58,237,0.3)';
+    btn.style.animation = 'ironcv-glow 2s ease-in-out infinite';
+  };
+
+  btn.addEventListener('click', () => {
+    const job = extractGlassdoorJob();
+    const jd = job?.jobDescription || '';
+    if (!jd) {
+      alert('IronCV: Could not extract the job description. Try scrolling down to load it first.');
+      return;
+    }
+    const encoded = btoa(encodeURIComponent(jd));
+    const url = `https://ironcv.com/generate#ext-jd=${encoded}`;
+    window.open(url, '_blank');
+  });
+
+  // Insert next to Apply button
+  if (applyBtnEl && applyBtnEl.parentElement) {
+    applyBtnEl.parentElement.insertBefore(btn, applyBtnEl.nextSibling);
+  } else if (anchorEl) {
+    anchorEl.appendChild(btn);
+  }
+  console.log('[IronCV] Glassdoor Tailor button injected');
+}
+
+// ── Glassdoor observer ────────────────────────────────────────────────────────
+(function() {
+  if (!window.location.href.includes('glassdoor.com')) return;
+
+  const observer = new MutationObserver(() => {
+    injectGlassdoorButton();
+  });
+
+  observer.observe(document.body, { subtree: true, childList: true });
+  
+  // Glassdoor loads slowly, retry multiple times
+  setTimeout(injectGlassdoorButton, 1000);
+  setTimeout(injectGlassdoorButton, 2000);
+  setTimeout(injectGlassdoorButton, 3500);
+  setTimeout(injectGlassdoorButton, 5000);
+
+  console.log('[IronCV] MutationObserver started for Glassdoor');
+})();
 
 // ── Indeed observer ───────────────────────────────────────────────────────────
 (function() {
