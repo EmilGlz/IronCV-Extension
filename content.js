@@ -372,6 +372,8 @@ function extractIndeedJob() {
 }
 
 // Glassdoor Job Parser
+// IMPORTANT: Glassdoor shows a job list on the left and detail panel on the right.
+// We need to extract from the DETAIL PANEL (right side), not the list items.
 function extractGlassdoorJob() {
   try {
     const job = {
@@ -379,95 +381,93 @@ function extractGlassdoorJob() {
       source: 'Glassdoor'
     };
 
-    // Job Title - "Developer" appears as a heading below company name
-    // Look for text that looks like a job title (not company name, not rating)
+    // Find the detail panel (right side) - this contains the selected job
+    // The detail panel usually has the "Easy Apply" button and full job description
+    const detailPanel = document.querySelector('[class*="JobDetails"]') || 
+                        document.querySelector('[class*="jobDetails"]') ||
+                        document.querySelector('[data-test="jobDetails"]') ||
+                        document.querySelector('article') ||
+                        document.querySelector('main');
+
+    // Job Title - look in detail panel first (e.g., "Lead Software Developer")
     const titleSelectors = [
       '[data-test="jobTitle"]',
       '[data-test="job-title"]',
-      // Main job listing card - title is usually a div/span after company info
-      '.JobDetails_jobTitle__Rw_gn',
+      '[class*="JobDetails"] h1',
       '[class*="JobDetails_jobTitle"]',
       '[class*="jobTitle"]',
+      'h1',
     ];
-    for (const sel of titleSelectors) {
-      const el = document.querySelector(sel);
-      if (el && el.textContent.trim().length > 2) {
-        job.jobTitle = el.textContent.trim();
-        break;
-      }
-    }
     
-    // Fallback: look for standalone title-like text (not in a link, short, titlecase)
-    if (!job.jobTitle) {
-      // Find all text nodes that look like job titles
-      const candidates = document.querySelectorAll('div, span, h1, h2, h3');
-      for (const el of candidates) {
+    for (const sel of titleSelectors) {
+      // Try within detail panel first
+      let el = detailPanel?.querySelector(sel);
+      if (!el) el = document.querySelector(sel);
+      
+      if (el) {
         const text = el.textContent?.trim() || '';
-        // Job titles are usually 1-5 words, no special chars, not a link
-        if (text.length > 3 && text.length < 50 && 
-            !text.includes('$') && !text.includes('★') && 
-            !text.includes('Apply') && !text.includes('Glassdoor') &&
-            el.children.length === 0) { // leaf node
-          // Check if it looks like a job title (Developer, Engineer, Manager, etc.)
-          if (/^(Sr\.?|Senior|Junior|Lead|Staff|Principal)?\s*(Software|Full|Front|Back|Data|Dev|Web|Mobile|Cloud|System|IT|QA|Test|Product|Project|Program|UI|UX)?\s*(Developer|Engineer|Manager|Analyst|Designer|Architect|Specialist|Consultant|Administrator|Lead|Director)/i.test(text) ||
-              text === 'Developer') {
-            job.jobTitle = text;
-            break;
-          }
+        // Skip if it looks like company name (has rating stars)
+        if (text.length > 2 && text.length < 100 && !text.includes('★')) {
+          job.jobTitle = text;
+          break;
         }
       }
     }
 
-    // Company Name - "New Market Group" with star rating nearby
+    // Company Name - look for company with rating in detail panel (e.g., "Owl Practice 3.8★")
     const companySelectors = [
       '[data-test="employerName"]',
       '[data-test="employer-name"]',
       '[class*="EmployerProfile_employerName"]',
       '[class*="employerName"]',
-      // Look for links to company overview pages
+      '[class*="companyName"]',
       'a[href*="/Overview/Working-at"]',
       'a[href*="/Reviews/"]',
     ];
+    
     for (const sel of companySelectors) {
-      const el = document.querySelector(sel);
-      if (el && el.textContent.trim().length > 1) {
+      let el = detailPanel?.querySelector(sel);
+      if (!el) el = document.querySelector(sel);
+      
+      if (el) {
+        let name = el.textContent?.trim() || '';
         // Clean up: remove rating stars if present
-        let name = el.textContent.trim();
-        name = name.replace(/\d+\.\d+★?/g, '').trim();
+        name = name.replace(/\s*\d+\.\d+★?\s*/g, '').trim();
         if (name.length > 1) {
           job.companyName = name;
           break;
         }
       }
     }
+    
+    // Fallback: look for text with company rating pattern in detail panel
+    if (!job.companyName && detailPanel) {
+      const companyMatch = detailPanel.innerText.match(/([A-Z][a-zA-Z\s]+)\s+\d+\.\d+★/);
+      if (companyMatch) {
+        job.companyName = companyMatch[1].trim();
+      }
+    }
 
-    // Location - "Newmarket" appears below salary
+    // Location - look in detail panel (e.g., "Remote")
     const locationSelectors = [
       '[data-test="location"]',
       '[data-test="emp-location"]',
       '[class*="JobDetails_location"]',
       '[class*="location"]',
     ];
+    
     for (const sel of locationSelectors) {
-      const el = document.querySelector(sel);
+      let el = detailPanel?.querySelector(sel);
+      if (!el) el = document.querySelector(sel);
+      
       const text = el?.textContent?.trim() || '';
-      if (text.length > 2 && !text.includes('$')) {
+      if (text.length > 2 && text.length < 100 && !text.includes('$')) {
         job.location = text;
         break;
       }
     }
-    
-    // Fallback: find location near salary (often on same line)
-    if (!job.location) {
-      const allText = document.body.innerText;
-      // Pattern: City name before salary
-      const locMatch = allText.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+\$\d+K?\s*[-–]\s*\$\d+K?/);
-      if (locMatch) {
-        job.location = locMatch[1].trim();
-      }
-    }
 
-    // Salary - "$110K - $130K (Employer provided)"
+    // Salary - look in detail panel (e.g., "$150K - $160K (Employer provided)")
     const salarySelectors = [
       '[data-test="detailSalary"]',
       '[data-test="salary"]',
@@ -475,8 +475,11 @@ function extractGlassdoorJob() {
       '[class*="SalaryEstimate"]',
       '[class*="salary"]',
     ];
+    
     for (const sel of salarySelectors) {
-      const el = document.querySelector(sel);
+      let el = detailPanel?.querySelector(sel);
+      if (!el) el = document.querySelector(sel);
+      
       if (el && el.textContent.includes('$')) {
         const salaryText = el.textContent;
         const salaryRange = parseSalary(salaryText);
@@ -490,9 +493,9 @@ function extractGlassdoorJob() {
       }
     }
     
-    // Fallback: find salary in page text
-    if (!job.salaryMin && !job.salary) {
-      const salaryMatch = document.body.innerText.match(/\$(\d+)K?\s*[-–]\s*\$(\d+)K?/);
+    // Fallback: find salary pattern in detail panel
+    if (!job.salaryMin && !job.salary && detailPanel) {
+      const salaryMatch = detailPanel.innerText.match(/\$(\d+)K?\s*[-–]\s*\$(\d+)K?/);
       if (salaryMatch) {
         const min = parseInt(salaryMatch[1]);
         const max = parseInt(salaryMatch[2]);
@@ -501,7 +504,7 @@ function extractGlassdoorJob() {
       }
     }
 
-    // Job Description - starts with company description, includes qualifications
+    // Job Description - from detail panel
     job.jobDescription = getGlassdoorJobDescription();
 
     // Validate we got something
@@ -1071,8 +1074,36 @@ function injectGlassdoorButton() {
 (function() {
   if (!isGlassdoor()) return;
 
+  let lastJobTitle = '';
+  let debounceTimer = null;
+
   const observer = new MutationObserver(() => {
-    injectGlassdoorButton();
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      // Check if job changed (user clicked different job in list)
+      const currentJob = extractGlassdoorJob();
+      const currentTitle = currentJob?.jobTitle || '';
+      
+      if (currentTitle && currentTitle !== lastJobTitle) {
+        lastJobTitle = currentTitle;
+        console.log('[IronCV] Glassdoor job changed:', currentTitle);
+        
+        // Remove old button and inject new one
+        const oldBtn = document.getElementById('ironcv-tailor-btn');
+        if (oldBtn) oldBtn.remove();
+        
+        // Notify background/popup that job changed
+        chrome.runtime.sendMessage({ action: 'jobUpdated', job: currentJob });
+        
+        // Retry button injection for the new job panel
+        setTimeout(injectGlassdoorButton, 300);
+        setTimeout(injectGlassdoorButton, 800);
+        setTimeout(injectGlassdoorButton, 1500);
+      }
+      
+      // Always try to inject button
+      injectGlassdoorButton();
+    }, 500);
   });
 
   observer.observe(document.body, { subtree: true, childList: true });
