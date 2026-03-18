@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=800">
+  <title>IronCV Extension - Tailor Button</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .container {
+      display: flex;
+      align-items: center;
+      gap: 60px;
+      max-width: 1200px;
+    }
+    .mockup-side {
+      position: relative;
+      flex: 1.2;
+    }
+    .text-side {
+      flex: 1;
+      color: white;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(124, 58, 237, 0.2);
+      border: 1px solid rgba(124, 58, 237, 0.4);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #a78bfa;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 44px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+    h1 span {
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      font-size: 20px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 16px;
+      border-radius: 12px;
+    }
+    .step-num {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .step-content h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .step-content p {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+    .browser-frame {
+      background: #1e1e2e;
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+    }
+    .browser-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #2a2a3e;
+      border-radius: 8px 8px 0 0;
+    }
+    .browser-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27ca40; }
+    .browser-url {
+      flex: 1;
+      background: #1e1e2e;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #64748b;
+      margin-left: 12px;
+    }
+    .linkedin-mock {
+      background: #f3f2ef;
+      padding: 20px;
+      border-radius: 0 0 8px 8px;
+    }
+    .job-header {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .job-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .job-info h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #191919;
+      margin-bottom: 4px;
+    }
+    .job-info .company {
+      font-size: 14px;
+      color: #0a66c2;
+      margin-bottom: 4px;
+    }
+    .job-info .meta {
+      font-size: 13px;
+      color: #666;
+    }
+    .company-logo {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #4285f4, #34a853);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 20px;
+    }
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .btn-easy-apply {
+      background: #0a66c2;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-ironcv {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+      animation: glow 2s ease-in-out infinite;
+    }
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 15px rgba(124,58,237,0.5); }
+      50% { box-shadow: 0 0 25px rgba(124,58,237,0.8); }
+    }
+    .btn-save {
+      background: white;
+      color: #666;
+      border: 1px solid #ccc;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .arrow-callout {
+      position: absolute;
+      bottom: 80px;
+      left: 220px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .arrow-text {
+      background: #7c3aed;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .arrow-svg {
+      transform: rotate(45deg);
+    }
+    .glow-bg {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(124,58,237,0.2) 0%, transparent 70%);
+      border-radius: 50%;
+      top: -100px;
+      left: -100px;
+      z-index: -1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="mockup-side">
+      <div class="glow-bg"></div>
+      <div class="browser-frame">
+        <div class="browser-header">
+          <div class="browser-dots">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+          </div>
+          <div class="browser-url">linkedin.com/jobs/view/3847592847</div>
+        </div>
+        <div class="linkedin-mock">
+          <div class="job-header">
+            <div class="job-title-row">
+              <div class="job-info">
+                <h2>Senior Full Stack Engineer</h2>
+                <div class="company">Stripe</div>
+                <div class="meta">San Francisco, CA · $185K - $280K · Hybrid</div>
+              </div>
+              <div class="company-logo">S</div>
+            </div>
+            <div class="button-row">
+              <button class="btn-easy-apply">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Easy Apply
+              </button>
+              <button class="btn-ironcv">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Tailor with IronCV
+              </button>
+              <button class="btn-save">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="arrow-callout">
+        <div class="arrow-text">Click to optimize your resume!</div>
+        <svg class="arrow-svg" width="40" height="40" viewBox="0 0 24 24" fill="#7c3aed">
+          <path d="M7 17L17 7M17 7H7M17 7V17"/>
+        </svg>
+      </div>
+    </div>
+    <div class="text-side">
+      <div class="badge">⚡ One-Click Tailoring</div>
+      <h1>Tailor Your Resume <span>Right From LinkedIn</span></h1>
+      <p class="subtitle">Our button appears next to "Easy Apply" — click it to instantly optimize your resume for that specific job.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h3>Browse Jobs</h3>
+            <p>Find jobs on LinkedIn, Indeed, or Glassdoor as usual</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h3>Click "Tailor with IronCV"</h3>
+            <p>Our purple button appears next to the Apply button</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h3>Get Your Optimized Resume</h3>
+            <p>AI tailors your resume to match the job in 60 seconds</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=800">
+  <title>IronCV Extension - ATS Score</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .container {
+      display: flex;
+      align-items: center;
+      gap: 60px;
+      max-width: 1200px;
+    }
+    .text-side {
+      flex: 1;
+      color: white;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(124, 58, 237, 0.2);
+      border: 1px solid rgba(124, 58, 237, 0.4);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #a78bfa;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 48px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+    h1 span {
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      font-size: 20px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 16px;
+      color: #e2e8f0;
+    }
+    .feature-icon {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+    }
+    .popup-side {
+      position: relative;
+    }
+    .browser-frame {
+      background: #1e1e2e;
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+    }
+    .browser-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #2a2a3e;
+      border-radius: 8px 8px 0 0;
+    }
+    .browser-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-red { background: #ff5f56; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #27ca40; }
+    .browser-url {
+      flex: 1;
+      background: #1e1e2e;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #64748b;
+      margin-left: 12px;
+    }
+    .popup {
+      width: 320px;
+      background: white;
+      border-radius: 0 0 8px 8px;
+      overflow: hidden;
+    }
+    .popup-header {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      padding: 16px;
+      color: white;
+    }
+    .popup-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .popup-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .popup-logo svg {
+      width: 24px;
+      height: 24px;
+    }
+    .source-badge {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+    }
+    .job-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .job-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .job-company {
+      font-size: 13px;
+      opacity: 0.9;
+      margin-bottom: 6px;
+    }
+    .job-meta {
+      display: flex;
+      gap: 12px;
+      font-size: 11px;
+      opacity: 0.8;
+    }
+    .popup-body {
+      padding: 16px;
+    }
+    .ats-section {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .ats-label {
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+    .ats-score {
+      font-size: 48px;
+      font-weight: 700;
+      color: #10b981;
+      line-height: 1;
+    }
+    .ats-bar {
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      margin: 12px 0;
+      overflow: hidden;
+    }
+    .ats-bar-fill {
+      height: 100%;
+      width: 82%;
+      background: linear-gradient(90deg, #10b981, #059669);
+      border-radius: 4px;
+    }
+    .ats-hint {
+      font-size: 12px;
+      color: #10b981;
+    }
+    .popup-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #475569;
+      border: none;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .glow {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(124,58,237,0.3) 0%, transparent 70%);
+      border-radius: 50%;
+      top: -50px;
+      right: -50px;
+      z-index: -1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="text-side">
+      <div class="badge">⚡ Chrome Extension</div>
+      <h1>See Your <span>ATS Score</span><br>Instantly</h1>
+      <p class="subtitle">Browse jobs on LinkedIn, Indeed, or Glassdoor — IronCV shows how well your resume matches in real-time.</p>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">✓</div>
+          <span>Works on LinkedIn, Indeed & Glassdoor</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">✓</div>
+          <span>AI-powered resume analysis</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">✓</div>
+          <span>One-click resume tailoring</span>
+        </div>
+      </div>
+    </div>
+    <div class="popup-side">
+      <div class="glow"></div>
+      <div class="browser-frame">
+        <div class="browser-header">
+          <div class="browser-dots">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+          </div>
+          <div class="browser-url">linkedin.com/jobs/view/senior-software-engineer</div>
+        </div>
+        <div class="popup">
+          <div class="popup-header">
+            <div class="popup-header-top">
+              <div class="popup-logo">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                IronCV
+              </div>
+              <div class="source-badge">LinkedIn</div>
+            </div>
+            <div class="job-card">
+              <div class="job-title">Senior Software Engineer</div>
+              <div class="job-company">Google • Mountain View, CA</div>
+              <div class="job-meta">
+                <span>💰 $180K - $250K</span>
+                <span>🏢 Hybrid</span>
+              </div>
+            </div>
+          </div>
+          <div class="popup-body">
+            <div class="ats-section">
+              <div class="ats-label">Your ATS Match Score</div>
+              <div class="ats-score">82%</div>
+              <div class="ats-bar"><div class="ats-bar-fill"></div></div>
+              <div class="ats-hint">Strong match — fine-tune to 90%+</div>
+            </div>
+            <div class="popup-actions">
+              <button class="btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Tailor My Resume
+              </button>
+              <button class="btn-secondary">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                Save to Job Tracker
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

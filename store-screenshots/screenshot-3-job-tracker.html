@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=800">
+  <title>IronCV Extension - Job Tracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .container {
+      display: flex;
+      align-items: center;
+      gap: 60px;
+      max-width: 1200px;
+    }
+    .text-side {
+      flex: 1;
+      color: white;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(124, 58, 237, 0.2);
+      border: 1px solid rgba(124, 58, 237, 0.4);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #a78bfa;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 44px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+    h1 span {
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      font-size: 20px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .feature {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(124, 58, 237, 0.2);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .feature-text h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .feature-text p {
+      font-size: 14px;
+      color: #94a3b8;
+    }
+    .kanban-side {
+      flex: 1.3;
+      position: relative;
+    }
+    .kanban-board {
+      display: flex;
+      gap: 16px;
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+    }
+    .kanban-column {
+      flex: 1;
+      min-width: 160px;
+    }
+    .column-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    .column-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .dot-saved { background: #3b82f6; }
+    .dot-applied { background: #f59e0b; }
+    .dot-interview { background: #8b5cf6; }
+    .dot-offer { background: #10b981; }
+    .column-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+    }
+    .column-count {
+      background: #f1f5f9;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      color: #64748b;
+      margin-left: auto;
+    }
+    .job-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .job-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+      cursor: grab;
+      transition: all 0.2s;
+    }
+    .job-card:hover {
+      border-color: #7c3aed;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
+    }
+    .card-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+      color: white;
+      margin-bottom: 8px;
+    }
+    .logo-google { background: linear-gradient(135deg, #4285f4, #34a853); }
+    .logo-stripe { background: linear-gradient(135deg, #635bff, #a259ff); }
+    .logo-meta { background: linear-gradient(135deg, #0668e1, #00c6ff); }
+    .logo-netflix { background: #e50914; }
+    .logo-apple { background: #000; }
+    .logo-spotify { background: #1db954; }
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-company {
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .card-salary {
+      font-size: 10px;
+      color: #10b981;
+      font-weight: 500;
+    }
+    .card-ats {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .ats-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .ats-high { background: #dcfce7; color: #16a34a; }
+    .ats-med { background: #fef3c7; color: #d97706; }
+    .glow {
+      position: absolute;
+      width: 350px;
+      height: 350px;
+      background: radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%);
+      border-radius: 50%;
+      top: -80px;
+      right: -80px;
+      z-index: -1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="text-side">
+      <div class="badge">📋 Job Tracker</div>
+      <h1>Track Every Job <span>In One Place</span></h1>
+      <p class="subtitle">Save jobs with one click. Organize by status. Never lose track of an application again.</p>
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">📌</div>
+          <div class="feature-text">
+            <h3>One-Click Save</h3>
+            <p>Save jobs directly from LinkedIn, Indeed, Glassdoor</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📊</div>
+          <div class="feature-text">
+            <h3>Kanban Board</h3>
+            <p>Drag & drop jobs between Saved, Applied, Interview, Offer</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🎯</div>
+          <div class="feature-text">
+            <h3>ATS Scores</h3>
+            <p>See your match score for each saved job</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="kanban-side">
+      <div class="glow"></div>
+      <div class="kanban-board">
+        <div class="kanban-column">
+          <div class="column-header">
+            <div class="column-dot dot-saved"></div>
+            <span class="column-title">Saved</span>
+            <span class="column-count">3</span>
+          </div>
+          <div class="job-cards">
+            <div class="job-card">
+              <div class="card-logo logo-google">G</div>
+              <div class="card-title">Senior SWE</div>
+              <div class="card-company">Google</div>
+              <div class="card-salary">$185K - $280K</div>
+              <div class="card-ats"><span class="ats-badge ats-high">87% Match</span></div>
+            </div>
+            <div class="job-card">
+              <div class="card-logo logo-stripe">S</div>
+              <div class="card-title">Full Stack Eng</div>
+              <div class="card-company">Stripe</div>
+              <div class="card-salary">$170K - $250K</div>
+              <div class="card-ats"><span class="ats-badge ats-high">82% Match</span></div>
+            </div>
+            <div class="job-card">
+              <div class="card-logo logo-meta">M</div>
+              <div class="card-title">Backend Eng</div>
+              <div class="card-company">Meta</div>
+              <div class="card-salary">$180K - $270K</div>
+              <div class="card-ats"><span class="ats-badge ats-med">68% Match</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="kanban-column">
+          <div class="column-header">
+            <div class="column-dot dot-applied"></div>
+            <span class="column-title">Applied</span>
+            <span class="column-count">2</span>
+          </div>
+          <div class="job-cards">
+            <div class="job-card">
+              <div class="card-logo logo-netflix">N</div>
+              <div class="card-title">Platform Eng</div>
+              <div class="card-company">Netflix</div>
+              <div class="card-salary">$200K - $350K</div>
+              <div class="card-ats"><span class="ats-badge ats-high">91% Match</span></div>
+            </div>
+            <div class="job-card">
+              <div class="card-logo logo-apple">A</div>
+              <div class="card-title">iOS Engineer</div>
+              <div class="card-company">Apple</div>
+              <div class="card-salary">$175K - $280K</div>
+              <div class="card-ats"><span class="ats-badge ats-high">85% Match</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="kanban-column">
+          <div class="column-header">
+            <div class="column-dot dot-interview"></div>
+            <span class="column-title">Interview</span>
+            <span class="column-count">1</span>
+          </div>
+          <div class="job-cards">
+            <div class="job-card">
+              <div class="card-logo logo-spotify">S</div>
+              <div class="card-title">Sr. Backend</div>
+              <div class="card-company">Spotify</div>
+              <div class="card-salary">$165K - $240K</div>
+              <div class="card-ats"><span class="ats-badge ats-high">89% Match</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
