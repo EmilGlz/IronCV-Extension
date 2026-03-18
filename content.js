@@ -377,15 +377,15 @@ function extractGlassdoorJob() {
       source: 'Glassdoor'
     };
 
-    // Job Title - multiple selector patterns
+    // Job Title - "Developer" appears as a heading below company name
+    // Look for text that looks like a job title (not company name, not rating)
     const titleSelectors = [
       '[data-test="jobTitle"]',
       '[data-test="job-title"]',
+      // Main job listing card - title is usually a div/span after company info
+      '.JobDetails_jobTitle__Rw_gn',
       '[class*="JobDetails_jobTitle"]',
       '[class*="jobTitle"]',
-      '.JobDetails_jobTitle__Rw_gn',
-      'h1[class*="heading"]',
-      'h1',
     ];
     for (const sel of titleSelectors) {
       const el = document.querySelector(sel);
@@ -394,47 +394,84 @@ function extractGlassdoorJob() {
         break;
       }
     }
+    
+    // Fallback: look for standalone title-like text (not in a link, short, titlecase)
+    if (!job.jobTitle) {
+      // Find all text nodes that look like job titles
+      const candidates = document.querySelectorAll('div, span, h1, h2, h3');
+      for (const el of candidates) {
+        const text = el.textContent?.trim() || '';
+        // Job titles are usually 1-5 words, no special chars, not a link
+        if (text.length > 3 && text.length < 50 && 
+            !text.includes('$') && !text.includes('★') && 
+            !text.includes('Apply') && !text.includes('Glassdoor') &&
+            el.children.length === 0) { // leaf node
+          // Check if it looks like a job title (Developer, Engineer, Manager, etc.)
+          if (/^(Sr\.?|Senior|Junior|Lead|Staff|Principal)?\s*(Software|Full|Front|Back|Data|Dev|Web|Mobile|Cloud|System|IT|QA|Test|Product|Project|Program|UI|UX)?\s*(Developer|Engineer|Manager|Analyst|Designer|Architect|Specialist|Consultant|Administrator|Lead|Director)/i.test(text) ||
+              text === 'Developer') {
+            job.jobTitle = text;
+            break;
+          }
+        }
+      }
+    }
 
-    // Company Name - multiple selector patterns
+    // Company Name - "New Market Group" with star rating nearby
     const companySelectors = [
       '[data-test="employerName"]',
       '[data-test="employer-name"]',
       '[class*="EmployerProfile_employerName"]',
       '[class*="employerName"]',
-      '[class*="companyName"]',
-      'a[href*="/Overview/"]',
+      // Look for links to company overview pages
+      'a[href*="/Overview/Working-at"]',
+      'a[href*="/Reviews/"]',
     ];
     for (const sel of companySelectors) {
       const el = document.querySelector(sel);
       if (el && el.textContent.trim().length > 1) {
-        job.companyName = el.textContent.trim();
-        break;
+        // Clean up: remove rating stars if present
+        let name = el.textContent.trim();
+        name = name.replace(/\d+\.\d+★?/g, '').trim();
+        if (name.length > 1) {
+          job.companyName = name;
+          break;
+        }
       }
     }
 
-    // Location - multiple selector patterns
+    // Location - "Newmarket" appears below salary
     const locationSelectors = [
       '[data-test="location"]',
       '[data-test="emp-location"]',
       '[class*="JobDetails_location"]',
       '[class*="location"]',
-      '[class*="Location"]',
     ];
     for (const sel of locationSelectors) {
       const el = document.querySelector(sel);
-      if (el && el.textContent.trim().length > 2) {
-        job.location = el.textContent.trim();
+      const text = el?.textContent?.trim() || '';
+      if (text.length > 2 && !text.includes('$')) {
+        job.location = text;
         break;
       }
     }
+    
+    // Fallback: find location near salary (often on same line)
+    if (!job.location) {
+      const allText = document.body.innerText;
+      // Pattern: City name before salary
+      const locMatch = allText.match(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+\$\d+K?\s*[-–]\s*\$\d+K?/);
+      if (locMatch) {
+        job.location = locMatch[1].trim();
+      }
+    }
 
-    // Salary - multiple selector patterns
+    // Salary - "$110K - $130K (Employer provided)"
     const salarySelectors = [
       '[data-test="detailSalary"]',
       '[data-test="salary"]',
       '[class*="JobDetails_salary"]',
+      '[class*="SalaryEstimate"]',
       '[class*="salary"]',
-      '[class*="Salary"]',
     ];
     for (const sel of salarySelectors) {
       const el = document.querySelector(sel);
@@ -450,8 +487,19 @@ function extractGlassdoorJob() {
         break;
       }
     }
+    
+    // Fallback: find salary in page text
+    if (!job.salaryMin && !job.salary) {
+      const salaryMatch = document.body.innerText.match(/\$(\d+)K?\s*[-–]\s*\$(\d+)K?/);
+      if (salaryMatch) {
+        const min = parseInt(salaryMatch[1]);
+        const max = parseInt(salaryMatch[2]);
+        job.salaryMin = min < 1000 ? min * 1000 : min;
+        job.salaryMax = max < 1000 ? max * 1000 : max;
+      }
+    }
 
-    // Job Description
+    // Job Description - starts with company description, includes qualifications
     job.jobDescription = getGlassdoorJobDescription();
 
     // Validate we got something
@@ -852,14 +900,15 @@ function injectGlassdoorButton() {
   if (!window.location.href.includes('glassdoor.com')) return;
   if (document.getElementById('ironcv-tailor-btn')) return;
 
-  // Find the Apply button on Glassdoor
+  // Find the "Easy Apply" button on Glassdoor (green button with lightning icon)
   const applySelectors = [
     'button[data-test="applyButton"]',
     'button[data-test="apply-button"]',
     '[class*="ApplyButton"]',
     '[class*="applyButton"]',
+    '[class*="EasyApplyButton"]',
     'button[class*="apply"]',
-    'a[class*="apply"]',
+    'button[class*="Apply"]',
   ];
 
   let applyBtnEl = null;
@@ -870,25 +919,49 @@ function injectGlassdoorButton() {
     if (el) {
       applyBtnEl = el;
       anchorEl = el.closest('div') || el.parentElement;
+      console.log('[IronCV] Glassdoor: Found apply button via selector:', sel);
       break;
     }
   }
 
-  // Fallback: find any button/link with "Apply" text
+  // Fallback: find button/span with "Easy Apply" text (Glassdoor's button text)
   if (!anchorEl) {
-    const candidates = document.querySelectorAll('button, a');
+    const candidates = document.querySelectorAll('button, a, span, div');
     for (const el of candidates) {
       const text = el.textContent?.trim() || '';
-      if ((text === 'Apply' || text === 'Easy Apply' || text === 'Apply Now') && !text.includes('IronCV')) {
-        applyBtnEl = el;
-        anchorEl = el.closest('div') || el.parentElement;
+      // Glassdoor shows "⚡ Easy Apply" or just "Easy Apply"
+      if ((text === 'Easy Apply' || text === '⚡ Easy Apply' || text.includes('Easy Apply')) && 
+          !text.includes('IronCV') && el.tagName !== 'BODY') {
+        // Go up to find the actual button element
+        applyBtnEl = el.closest('button') || el;
+        anchorEl = applyBtnEl.closest('div') || applyBtnEl.parentElement;
+        console.log('[IronCV] Glassdoor: Found Easy Apply via text match');
         break;
+      }
+    }
+  }
+  
+  // Second fallback: find any green-ish apply button
+  if (!anchorEl) {
+    const buttons = document.querySelectorAll('button');
+    for (const btn of buttons) {
+      const style = window.getComputedStyle(btn);
+      const bgColor = style.backgroundColor;
+      const text = btn.textContent?.trim() || '';
+      // Glassdoor's Easy Apply is green (#0caa41 or similar)
+      if (bgColor.includes('rgb(12') || bgColor.includes('rgb(10') || bgColor.includes('rgb(0, 1')) {
+        if (text.toLowerCase().includes('apply')) {
+          applyBtnEl = btn;
+          anchorEl = btn.closest('div') || btn.parentElement;
+          console.log('[IronCV] Glassdoor: Found apply button via green color');
+          break;
+        }
       }
     }
   }
 
   if (!anchorEl) {
-    console.log('[IronCV] Glassdoor: No apply button found yet');
+    console.log('[IronCV] Glassdoor: No apply button found yet, will retry...');
     return;
   }
 
