@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=440, height=280">
+  <title>IronCV Promo Tile</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 440px;
+      height: 280px;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 50%, #1a0a2e 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    
+    /* Subtle background glow */
+    .glow-1 {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(124,58,237,0.3) 0%, transparent 70%);
+      border-radius: 50%;
+      top: -100px;
+      right: -50px;
+    }
+    .glow-2 {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(167,139,250,0.2) 0%, transparent 70%);
+      border-radius: 50%;
+      bottom: -80px;
+      left: -30px;
+    }
+    
+    .content {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+    
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .logo-icon {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px rgba(124,58,237,0.4);
+    }
+    
+    .logo-icon svg {
+      width: 30px;
+      height: 30px;
+      fill: white;
+    }
+    
+    .logo-text {
+      font-size: 42px;
+      font-weight: 800;
+      color: white;
+      letter-spacing: -1px;
+    }
+    
+    .tagline {
+      font-size: 18px;
+      color: #c4b5fd;
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+    
+    .features {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+    }
+    
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #e2e8f0;
+    }
+    
+    .feature-dot {
+      width: 8px;
+      height: 8px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-1"></div>
+  <div class="glow-2"></div>
+  
+  <div class="content">
+    <div class="logo-container">
+      <div class="logo-icon">
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+          <rect x="11" y="12" width="42" height="10" rx="3"/>
+          <rect x="26" y="22" width="12" height="20"/>
+          <rect x="11" y="42" width="42" height="10" rx="3"/>
+        </svg>
+      </div>
+      <span class="logo-text">IronCV</span>
+    </div>
+    
+    <div class="tagline">Beat the ATS. Land More Interviews.</div>
+    
+    <div class="features">
+      <div class="feature">
+        <div class="feature-dot"></div>
+        <span>ATS Score</span>
+      </div>
+      <div class="feature">
+        <div class="feature-dot"></div>
+        <span>AI Tailoring</span>
+      </div>
+      <div class="feature">
+        <div class="feature-dot"></div>
+        <span>Job Tracker</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

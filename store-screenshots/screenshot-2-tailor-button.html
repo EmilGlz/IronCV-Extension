@@ -217,11 +217,12 @@
     }
     .arrow-callout {
       position: absolute;
-      bottom: 80px;
-      left: 220px;
+      bottom: -60px;
+      left: 200px;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
     }
     .arrow-text {
       background: #7c3aed;
@@ -231,9 +232,10 @@
       font-size: 14px;
       font-weight: 600;
       white-space: nowrap;
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
     }
     .arrow-svg {
-      transform: rotate(45deg);
+      transform: rotate(-90deg);
     }
     .glow-bg {
       position: absolute;
@@ -284,12 +286,7 @@
           </div>
         </div>
       </div>
-      <div class="arrow-callout">
-        <div class="arrow-text">Click to optimize your resume!</div>
-        <svg class="arrow-svg" width="40" height="40" viewBox="0 0 24 24" fill="#7c3aed">
-          <path d="M7 17L17 7M17 7H7M17 7V17"/>
-        </svg>
-      </div>
+
     </div>
     <div class="text-side">
       <div class="badge">⚡ One-Click Tailoring</div>

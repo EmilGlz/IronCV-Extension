@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1400, height=560">
+  <title>IronCV Marquee Promo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 1400px;
+      height: 560px;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0d0628 0%, #1a0a2e 30%, #2d1b4e 70%, #1a0a2e 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    
+    /* Background glows */
+    .glow-1 {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%);
+      border-radius: 50%;
+      top: -150px;
+      left: 100px;
+    }
+    .glow-2 {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(167,139,250,0.2) 0%, transparent 70%);
+      border-radius: 50%;
+      bottom: -100px;
+      right: 200px;
+    }
+    .glow-3 {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    
+    .container {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 80px;
+      padding: 0 80px;
+      max-width: 1400px;
+    }
+    
+    .text-side {
+      flex: 1;
+      color: white;
+    }
+    
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(124, 58, 237, 0.2);
+      border: 1px solid rgba(124, 58, 237, 0.4);
+      padding: 8px 16px;
+      border-radius: 24px;
+      font-size: 14px;
+      color: #a78bfa;
+      margin-bottom: 24px;
+    }
+    
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .logo-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 32px rgba(124,58,237,0.4);
+    }
+    
+    .logo-icon svg {
+      width: 36px;
+      height: 36px;
+      fill: white;
+    }
+    
+    .logo-text {
+      font-size: 56px;
+      font-weight: 800;
+      letter-spacing: -2px;
+    }
+    
+    h1 {
+      font-size: 48px;
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+    
+    h1 span {
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .subtitle {
+      font-size: 20px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 32px;
+      max-width: 500px;
+    }
+    
+    .features {
+      display: flex;
+      gap: 32px;
+    }
+    
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .feature-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    
+    .feature span {
+      font-size: 16px;
+      color: #e2e8f0;
+      font-weight: 500;
+    }
+    
+    .mockup-side {
+      flex-shrink: 0;
+      position: relative;
+    }
+    
+    /* Extension popup mockup */
+    .popup-frame {
+      background: white;
+      border-radius: 16px;
+      width: 340px;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+      overflow: hidden;
+      transform: perspective(1000px) rotateY(-5deg);
+    }
+    
+    .popup-header {
+      background: linear-gradient(135deg, #0d0628 0%, #1a0840 100%);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .popup-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .popup-logo {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .popup-logo svg {
+      width: 18px;
+      height: 18px;
+      fill: white;
+    }
+    
+    .popup-brand-text h3 {
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    
+    .popup-brand-text p {
+      color: rgba(167,139,250,0.8);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .popup-badge {
+      background: rgba(124,58,237,0.3);
+      color: #c4b5fd;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .popup-body {
+      padding: 16px;
+    }
+    
+    .job-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    
+    .job-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111;
+      margin-bottom: 4px;
+    }
+    
+    .job-company {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+    
+    .job-salary {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #ecfdf5;
+      color: #059669;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .ats-section {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    
+    .ats-label {
+      font-size: 11px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    
+    .ats-score {
+      font-size: 52px;
+      font-weight: 800;
+      color: #10b981;
+      line-height: 1;
+    }
+    
+    .ats-bar {
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      margin: 12px 0;
+      overflow: hidden;
+    }
+    
+    .ats-bar-fill {
+      width: 87%;
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #059669);
+      border-radius: 4px;
+    }
+    
+    .ats-hint {
+      font-size: 13px;
+      color: #10b981;
+      font-weight: 500;
+    }
+    
+    .popup-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .popup-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+    
+    /* Floating badges */
+    .float-badge {
+      position: absolute;
+      background: white;
+      border-radius: 12px;
+      padding: 10px 16px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .float-badge.linkedin {
+      top: -20px;
+      right: -40px;
+      color: #0a66c2;
+    }
+    
+    .float-badge.indeed {
+      bottom: 40px;
+      right: -60px;
+      color: #2164f3;
+    }
+    
+    .float-badge svg {
+      width: 20px;
+      height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-1"></div>
+  <div class="glow-2"></div>
+  <div class="glow-3"></div>
+  
+  <div class="container">
+    <div class="text-side">
+      <div class="badge">⚡ Free Chrome Extension</div>
+      
+      <div class="logo-row">
+        <div class="logo-icon">
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+            <rect x="11" y="12" width="42" height="10" rx="3"/>
+            <rect x="26" y="22" width="12" height="20"/>
+            <rect x="11" y="42" width="42" height="10" rx="3"/>
+          </svg>
+        </div>
+        <span class="logo-text">IronCV</span>
+      </div>
+      
+      <h1>Beat the ATS.<br><span>Land More Interviews.</span></h1>
+      
+      <p class="subtitle">See your resume's ATS score instantly while browsing jobs. One-click AI tailoring to match any job description.</p>
+      
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">✓</div>
+          <span>Instant ATS Score</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">✓</div>
+          <span>AI Resume Tailoring</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">✓</div>
+          <span>Job Tracker</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mockup-side">
+      <div class="popup-frame">
+        <div class="popup-header">
+          <div class="popup-brand">
+            <div class="popup-logo">
+              <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                <rect x="11" y="12" width="42" height="10" rx="3"/>
+                <rect x="26" y="22" width="12" height="20"/>
+                <rect x="11" y="42" width="42" height="10" rx="3"/>
+              </svg>
+            </div>
+            <div class="popup-brand-text">
+              <h3>IronCV</h3>
+              <p>Resume Copilot</p>
+            </div>
+          </div>
+          <span class="popup-badge">LinkedIn</span>
+        </div>
+        
+        <div class="popup-body">
+          <div class="job-card">
+            <div class="job-title">Senior Software Engineer</div>
+            <div class="job-company">Google · Mountain View, CA</div>
+            <span class="job-salary">💰 $180K - $250K</span>
+          </div>
+          
+          <div class="ats-section">
+            <div class="ats-label">Your ATS Match Score</div>
+            <div class="ats-score">87%</div>
+            <div class="ats-bar"><div class="ats-bar-fill"></div></div>
+            <div class="ats-hint">Strong match — ready to apply!</div>
+          </div>
+          
+          <button class="popup-btn">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Tailor My Resume
+          </button>
+        </div>
+      </div>
+      
+
+    </div>
+  </div>
+</body>
+</html>

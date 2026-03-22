@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=800">
+  <title>IronCV Extension - AI Resume Tailoring</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .container {
+      display: flex;
+      align-items: center;
+      gap: 50px;
+      max-width: 1200px;
+    }
+    .before-after {
+      flex: 1.4;
+      display: flex;
+      gap: 20px;
+      position: relative;
+    }
+    .resume-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      width: 260px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .resume-card.before {
+      transform: rotate(-3deg);
+      opacity: 0.7;
+    }
+    .resume-card.after {
+      transform: rotate(3deg);
+      border: 3px solid #7c3aed;
+      box-shadow: 0 20px 60px rgba(124,58,237,0.3);
+    }
+    .resume-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      padding: 4px 10px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .label-before {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    .label-after {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+    .resume-header {
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    .resume-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111;
+      margin-bottom: 2px;
+    }
+    .resume-title {
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .resume-section {
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #374151;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+    .resume-line {
+      font-size: 10px;
+      color: #4b5563;
+      line-height: 1.5;
+      padding: 3px 0;
+    }
+    .highlight {
+      background: linear-gradient(120deg, #a7f3d0 0%, #6ee7b7 100%);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+    .old-text {
+      background: #fecaca;
+      padding: 1px 4px;
+      border-radius: 3px;
+      text-decoration: line-through;
+      color: #991b1b;
+    }
+    .arrow-connector {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+    .arrow-circle {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 30px rgba(124,58,237,0.5);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    .arrow-circle svg {
+      width: 28px;
+      height: 28px;
+      color: white;
+    }
+    .text-side {
+      flex: 1;
+      color: white;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(124, 58, 237, 0.2);
+      border: 1px solid rgba(124, 58, 237, 0.4);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #a78bfa;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 42px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+    h1 span {
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      font-size: 18px;
+      color: #94a3b8;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    .stats {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+    .stat {
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #10b981, #059669);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      color: #e2e8f0;
+    }
+    .feature-icon {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+    }
+    .score-badge {
+      position: absolute;
+      bottom: -15px;
+      right: -10px;
+      background: white;
+      border-radius: 20px;
+      padding: 6px 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .score-value {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .score-before { color: #dc2626; }
+    .score-after { color: #16a34a; }
+    .score-label {
+      font-size: 10px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="before-after">
+      <div class="resume-card before">
+        <span class="resume-label label-before">Before</span>
+        <div class="resume-header">
+          <div class="resume-name">Sarah Johnson</div>
+          <div class="resume-title">Software Developer</div>
+        </div>
+        <div class="resume-section">
+          <div class="section-title">Experience</div>
+          <div class="resume-line"><span class="old-text">Worked on various projects</span></div>
+          <div class="resume-line"><span class="old-text">Helped with development tasks</span></div>
+          <div class="resume-line"><span class="old-text">Participated in team meetings</span></div>
+        </div>
+        <div class="resume-section">
+          <div class="section-title">Skills</div>
+          <div class="resume-line"><span class="old-text">JavaScript, HTML, CSS</span></div>
+          <div class="resume-line"><span class="old-text">Good communication</span></div>
+        </div>
+        <div class="score-badge">
+          <span class="score-value score-before">54%</span>
+          <span class="score-label">ATS Score</span>
+        </div>
+      </div>
+      
+
+      
+      <div class="resume-card after">
+        <span class="resume-label label-after">After</span>
+        <div class="resume-header">
+          <div class="resume-name">Sarah Johnson</div>
+          <div class="resume-title">Full Stack Software Engineer</div>
+        </div>
+        <div class="resume-section">
+          <div class="section-title">Experience</div>
+          <div class="resume-line"><span class="highlight">Led development of microservices</span> reducing latency by 40%</div>
+          <div class="resume-line"><span class="highlight">Architected React/Node.js</span> platform serving 50K users</div>
+          <div class="resume-line"><span class="highlight">Mentored 3 junior engineers</span> in agile methodologies</div>
+        </div>
+        <div class="resume-section">
+          <div class="section-title">Skills</div>
+          <div class="resume-line"><span class="highlight">React, Node.js, TypeScript, AWS, Docker, PostgreSQL</span></div>
+          <div class="resume-line"><span class="highlight">CI/CD, Agile/Scrum, System Design</span></div>
+        </div>
+        <div class="score-badge">
+          <span class="score-value score-after">92%</span>
+          <span class="score-label">ATS Score</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="text-side">
+      <div class="badge">✨ AI-Powered</div>
+      <h1>Your Resume, <span>Optimized for ATS</span></h1>
+      <p class="subtitle">Our AI rewrites bullet points with job-specific keywords, quantified achievements, and action verbs that pass ATS filters.</p>
+      
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value">+38%</div>
+          <div class="stat-label">Avg. Score Boost</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">60s</div>
+          <div class="stat-label">Time to Tailor</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">3x</div>
+          <div class="stat-label">More Interviews</div>
+        </div>
+      </div>
+      
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">✓</div>
+          <span>Adds missing keywords from job description</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">✓</div>
+          <span>Rewrites vague bullets with metrics</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">✓</div>
+          <span>Keeps your authentic experience</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
