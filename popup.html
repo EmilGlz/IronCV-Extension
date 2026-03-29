@@ -92,6 +92,78 @@
       letter-spacing: 0.3px;
     }
 
+    /* ── Plan Bar ─────────────────────────────── */
+    #plan-bar {
+      background: rgba(255,255,255,0.05);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 7px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .plan-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .plan-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #a78bfa;
+    }
+
+    .plan-dot.pro { background: #60a5fa; }
+    .plan-dot.hunter { background: #f59e0b; }
+
+    .plan-limits {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    .limit-pill {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 9.5px;
+      color: rgba(255,255,255,0.6);
+      white-space: nowrap;
+    }
+
+    .limit-pill strong {
+      color: rgba(255,255,255,0.9);
+    }
+
+    .limit-pill.warn strong { color: #fbbf24; }
+    .limit-pill.maxed strong { color: #f87171; }
+
+    .upgrade-pill {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #7c3aed, #a78bfa);
+      color: white;
+      cursor: pointer;
+      border: none;
+      letter-spacing: 0.3px;
+      transition: opacity 0.15s;
+    }
+
+    .upgrade-pill:hover { opacity: 0.85; }
+
     /* ── Content ─────────────────────────────── */
     .content { padding: 14px; }
 
@@ -485,6 +557,17 @@
       </div>
     </div>
     <span class="header-badge" id="site-badge"></span>
+  </div>
+
+  <!-- Plan Bar (shown when signed in) -->
+  <div id="plan-bar" class="hidden">
+    <span class="plan-label">
+      <span class="plan-dot" id="plan-dot"></span>
+      <span id="plan-name">Free</span>
+    </span>
+    <div class="plan-limits" id="plan-limits">
+      <!-- Populated by JS -->
+    </div>
   </div>
 
   <div class="content">

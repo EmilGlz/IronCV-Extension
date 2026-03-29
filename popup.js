@@ -37,6 +37,62 @@ const tailorSavedBtn  = document.getElementById('tailor-saved-btn');
 const viewTrackerBtn  = document.getElementById('view-tracker-btn');
 
 let currentJob = null;
+let userPlan = 'Free';
+
+// ── Plan Bar ──────────────────────────────────────────────────────────────────
+
+async function loadPlanLimits(token) {
+  const planBar    = document.getElementById('plan-bar');
+  const planName   = document.getElementById('plan-name');
+  const planDot    = document.getElementById('plan-dot');
+  const planLimits = document.getElementById('plan-limits');
+
+  try {
+    const res = await fetch(`${API_URL}/api/Subscription/plan-limits`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!res.ok) return;
+    const data = await res.json();
+
+    userPlan = data.plan || 'Free';
+
+    // Plan label
+    planName.textContent = userPlan;
+    planDot.className = 'plan-dot ' + (userPlan === 'Hunter' ? 'hunter' : userPlan === 'Pro' ? 'pro' : '');
+
+    // Build limit pills
+    const pills = [];
+
+    // ATS Checks
+    if (data.atsChecks && data.atsChecks.limit !== -1 && data.atsChecks.limit > 0) {
+      const { used, limit } = data.atsChecks;
+      const remaining = Math.max(0, limit - used);
+      const cls = remaining === 0 ? 'maxed' : remaining <= 1 ? 'warn' : '';
+      pills.push(`<span class="limit-pill ${cls}"><strong>${remaining}/${limit}</strong> ATS</span>`);
+    } else if (data.atsChecks?.limit === -1) {
+      pills.push(`<span class="limit-pill"><strong>∞</strong> ATS</span>`);
+    }
+
+    // Interview questions
+    if (data.interviewQuestions && data.interviewQuestions.limit !== -1 && data.interviewQuestions.limit > 0) {
+      const { used, limit } = data.interviewQuestions;
+      const remaining = Math.max(0, limit - used);
+      const cls = remaining === 0 ? 'maxed' : remaining <= 1 ? 'warn' : '';
+      pills.push(`<span class="limit-pill ${cls}"><strong>${remaining}/${limit}</strong> Interview</span>`);
+    }
+
+    // Upgrade button for Free users
+    if (userPlan === 'Free') {
+      pills.push(`<button class="upgrade-pill" onclick="chrome.tabs.create({url:'https://ironcv.com/pricing'})">Upgrade ↗</button>`);
+    }
+
+    planLimits.innerHTML = pills.join('');
+    planBar.classList.remove('hidden');
+  } catch (err) {
+    console.warn('[IronCV] Failed to load plan limits:', err);
+  }
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -190,6 +246,16 @@ async function runAtsCheck(job) {
 
     if (atsData.error) {
       atsLoading.classList.add('hidden');
+      // Limit reached
+      if (atsData.code === 'LIMIT_REACHED' || atsData.status === 403) {
+        atsResumeLabel.textContent = '⚠️ Monthly limit reached';
+        atsResumeLabel.style.color = '#f59e0b';
+        const limitMsg = document.createElement('div');
+        limitMsg.style.cssText = 'font-size:10px;color:#9ca3af;margin-top:6px;text-align:center;';
+        limitMsg.innerHTML = '<a href="https://ironcv.com/pricing" target="_blank" style="color:#7c3aed;font-weight:600;">Upgrade to Pro</a> for unlimited ATS checks';
+        atsResult.appendChild(limitMsg);
+        return;
+      }
       atsResumeLabel.textContent = 'Score unavailable';
       return;
     }
@@ -218,6 +284,18 @@ async function saveJob() {
     const response = await chrome.runtime.sendMessage({ action: 'saveJob', job: currentJob });
     if (response.success) {
       showState('saved');
+    } else if (response.limitReached || response.code === 'LIMIT_REACHED') {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" style="width:15px;height:15px">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+        </svg>
+        Save to Job Tracker
+      `;
+      const limitBanner = document.createElement('div');
+      limitBanner.style.cssText = 'background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:11px;color:#92400e;text-align:center;';
+      limitBanner.innerHTML = `Job Tracker limit reached. <a href="https://ironcv.com/pricing" target="_blank" style="color:#7c3aed;font-weight:700;">Upgrade to Pro →</a>`;
+      saveBtn.parentNode.insertBefore(limitBanner, saveBtn.nextSibling);
     } else {
       throw new Error(response.error || 'Failed to save');
     }
@@ -250,6 +328,9 @@ async function init() {
     showState('notSignedIn');
     return;
   }
+
+  // Load plan limits in background (non-blocking)
+  loadPlanLimits(token);
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
