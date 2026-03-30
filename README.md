@@ -1,190 +1,185 @@
-# IronCV Browser Extension
+# IronCV Chrome Extension
 
-Save jobs from LinkedIn, Indeed, and Glassdoor to your IronCV job tracker with one click!
+Job scraping + ATS checking + Job Tracker integration directly from LinkedIn, Indeed, and Glassdoor.
 
-## Features
+**Version:** 2.1.1  
+**API:** `https://ironcv-api-y89t.onrender.com`  
+**Frontend:** [ironcv.com](https://ironcv.com)
 
-- ✅ **One-Click Save** - Save jobs instantly while browsing
-- ✅ **Auto-Extract Details** - Company, title, location, salary automatically detected
-- ✅ **Multiple Platforms** - Works on LinkedIn, Indeed, Glassdoor
-- ✅ **Seamless Sync** - Jobs saved directly to your IronCV job tracker
-- ✅ **Visual Indicator** - See when you're on a job page
+---
 
-## Installation
+## What It Does
 
-### For Development
+- **ATS Match Score** — instantly checks your master resume against the current job posting
+- **One-click Save** — sends job to IronCV Job Tracker (plan limits enforced)
+- **Tailor Resume** — opens generate page pre-filled with the job description
+- **Plan Badge** — shows Free/Pro/Hunter status + remaining monthly limits
+- **Auto-extract** — company, title, location, salary pulled from the job page
 
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" (toggle in top right)
-3. Click "Load unpacked"
-4. Select the `IronCV-Extension` folder
-5. Extension installed! ✅
+---
 
-### For Production (After Publishing)
+## Plan Limits (shown in popup)
 
-1. Visit Chrome Web Store
-2. Search for "IronCV Job Tracker"
-3. Click "Add to Chrome"
+| Feature | Free | Pro | Hunter |
+|---------|------|-----|--------|
+| ATS checks | 3/month | Unlimited | Unlimited |
+| Job Tracker saves | 0 | 50 total | Unlimited |
+| Tailor Resume | Unlimited | Unlimited | Unlimited |
 
-## Setup
+The plan bar under the header shows remaining counts. Hitting a limit shows an inline upgrade prompt.
 
-1. Click the IronCV extension icon
-2. Sign in to your IronCV account
-3. Navigate to a job posting on LinkedIn, Indeed, or Glassdoor
-4. Click the extension icon
-5. Click "Save to Job Tracker"
-6. Done! ✅
+---
 
 ## Supported Job Sites
 
-- ✅ **LinkedIn Jobs** (linkedin.com/jobs)
-- ✅ **Indeed** (indeed.com)
-- ✅ **Glassdoor** (glassdoor.com)
+| Site | URL pattern | Notes |
+|------|-------------|-------|
+| LinkedIn | `linkedin.com/jobs/*` | Full support |
+| LinkedIn Collections | `linkedin.com/jobs/?currentJobId=...` | Right-panel selected job |
+| Indeed | `indeed.com/*` | Full support |
+| Glassdoor | `glassdoor.com/*`, `glassdoor.ca/*`, etc. | Full support |
 
-## How to Get Your Auth Token
+---
 
-**Option 1: Sign in via Website**
-1. Go to https://ironcv.com/login
-2. Sign in to your account
-3. The extension will automatically detect your session
-
-**Option 2: Manual Token**
-1. Open https://ironcv.com
-2. Sign in to your account
-3. Open browser DevTools (F12)
-4. Go to Application → Storage → Local Storage → ironcv.com
-5. Find `token` key, copy the value
-6. Click extension icon → Settings → Paste token
-
-## Icons
-
-To create icons for the extension:
-
-1. Create 3 PNG files:
-   - `icons/icon16.png` (16x16px)
-   - `icons/icon48.png` (48x48px)
-   - `icons/icon128.png` (128x128px)
-
-2. Use IronCV logo with transparent background
-3. Save in the `icons/` directory
-
-## Development
-
-### File Structure
+## File Structure
 
 ```
 IronCV-Extension/
-├── manifest.json       # Extension configuration
-├── popup.html         # Popup UI
-├── popup.js           # Popup logic
-├── content.js         # Job extraction logic
-├── background.js      # Service worker
-├── icons/             # Extension icons
-└── README.md          # This file
+├── manifest.json       # Chrome extension manifest v3
+├── popup.html          # Extension popup UI (380px wide)
+├── popup.js            # Popup logic: auth, ATS check, save job, plan bar
+├── content.js          # Injected into job pages — scrapes job details
+├── background.js       # Service worker: API calls (ATS check, save job, fetch resume)
+└── icons/              # Extension icons (16, 32, 48, 128px)
 ```
 
-### Testing
+---
 
-1. Make code changes
-2. Go to `chrome://extensions/`
-3. Click reload icon on IronCV extension
-4. Test on a job page
-
-### Debugging
-
-- **Popup**: Right-click extension icon → Inspect
-- **Content Script**: Open DevTools on job page → Console
-- **Background**: `chrome://extensions/` → IronCV → "Inspect views: service worker"
-
-## API Integration
-
-The extension uses the IronCV API:
-
-**Endpoint:** `POST https://ironcv-api.onrender.com/api/JobTracker`
-
-**Headers:**
-- `Content-Type: application/json`
-- `Authorization: Bearer <token>`
-
-**Body:**
-```json
-{
-  "companyName": "Google",
-  "jobTitle": "Senior Software Engineer",
-  "location": "Mountain View, CA",
-  "jobUrl": "https://...",
-  "salaryMin": 150000,
-  "salaryMax": 200000,
-  "applicationSource": "Browser Extension",
-  "status": "Applied"
-}
-```
-
-## Publishing to Chrome Web Store
-
-1. Create a developer account at https://chrome.google.com/webstore/devconsole
-2. Pay one-time $5 fee
-3. Create ZIP of extension folder:
-   ```
-   zip -r ironcv-extension.zip IronCV-Extension/*
-   ```
-4. Upload ZIP to Chrome Web Store
-5. Fill in:
-   - Title: "IronCV Job Tracker"
-   - Description: (see below)
-   - Category: Productivity
-   - Screenshots: (take screenshots of popup UI)
-6. Submit for review (1-3 days)
-7. Published! ✅
-
-### Chrome Web Store Description
+## Architecture
 
 ```
-Save jobs from LinkedIn, Indeed, and Glassdoor to your IronCV job tracker with one click!
-
-Features:
-• One-click save jobs while browsing
-• Auto-extract company, title, location, salary
-• Works on LinkedIn, Indeed, Glassdoor
-• Sync directly to IronCV job tracker
-• Beautiful, modern UI
-
-How it works:
-1. Browse jobs on LinkedIn, Indeed, or Glassdoor
-2. Click IronCV extension icon
-3. Job details auto-filled
-4. Click "Save to Job Tracker"
-5. Done! View all saved jobs at ironcv.com/job-tracker
-
-No more manual copy/paste! Save 2-3 minutes per job application.
-
-Requires a free IronCV account (sign up at ironcv.com).
+User visits job page
+       │
+       ▼
+content.js (injected)
+  - Scrapes: jobTitle, companyName, location, salary, jobDescription, jobUrl
+  - Responds to popup's getJobDetails message
+       │
+       ▼
+popup.js (user opens popup)
+  1. getToken() — checks chrome.storage.sync for JWT
+  2. Sends getJobDetails to content.js
+  3. Calls background.js for API actions (avoids CORS in popup)
+  4. loadPlanLimits() — GET /api/Subscription/plan-limits → renders plan bar
+  5. runAtsCheck() — fetchLastResume + checkAts via background.js
+       │
+       ▼
+background.js (service worker)
+  - fetchLastResume: GET /api/MasterResume/latest
+  - checkAts: POST /api/Ats/check
+  - saveJob: POST /api/JobTracker
 ```
 
-## Privacy
+---
 
-- Extension only reads job details from job posting pages
-- No tracking, analytics, or data collection
-- Jobs saved securely to your IronCV account
-- Auth token stored locally in Chrome sync storage
-- No third-party services
+## popup.html — UI States
 
-## Support
+| State ID | Shown when |
+|----------|-----------|
+| `state-loading` | Initial auth check |
+| `state-not-signed-in` | No JWT found |
+| `state-no-job` | Current tab is not a supported job page |
+| `state-main` | Job detected, signed in → shows job card + ATS score + buttons |
+| `state-saved` | Job successfully saved to Job Tracker |
 
-- Website: https://ironcv.com
-- Email: support@ironcv.com
-- Report bugs: https://github.com/EmilGlz/JobFitResume-FE/issues
+**Plan bar** (below header, always visible when signed in):
+- Plan dot: purple = Free, blue = Pro, amber = Hunter
+- Limit pills: `2/3 ATS` with color (green → amber at 80% → red at 100%)
+- Upgrade button for Free users → opens `ironcv.com/pricing`
 
-## Version History
+---
 
-### 1.0.0 (Initial Release)
-- ✅ LinkedIn job extraction
-- ✅ Indeed job extraction
-- ✅ Glassdoor job extraction
-- ✅ One-click save to tracker
-- ✅ Auto-extract salary ranges
-- ✅ Visual page indicator
+## popup.js — Key Functions
 
-## License
+| Function | Purpose |
+|----------|---------|
+| `getToken()` | Check `chrome.storage.sync` for JWT, fallback to cookie scrape on ironcv.com tab |
+| `loadPlanLimits(token)` | Fetch `/api/Subscription/plan-limits`, render plan bar |
+| `runAtsCheck(job)` | Send to `background.js`, animate score bar on result |
+| `saveJob()` | Send to `background.js`, show saved state or limit/error inline |
+| `tailorResume()` | Open new tab: `ironcv.com/generate#ext-jd={base64}` |
+| `init()` | Auth check → plan limits (non-blocking) → job detect → ATS check |
 
-© 2026 IronCV. All rights reserved.
+**Limit handling:**
+- ATS limit hit → shows `"Monthly limit reached"` + `Upgrade to Pro` link inline in ATS card
+- Job Tracker limit hit → shows amber banner `"Job Tracker limit reached. Upgrade to Pro →"` below save button
+
+---
+
+## content.js — Job Scraping
+
+Listens for `getJobDetails` message from popup. Extracts:
+
+| Field | Source |
+|-------|--------|
+| `jobTitle` | Page H1 or title element |
+| `companyName` | Company link/text |
+| `location` | Location element |
+| `salary` | Salary range if displayed |
+| `jobDescription` | Full job description text |
+| `jobUrl` | Current tab URL |
+
+**Platform-specific selectors** for LinkedIn, Indeed, Glassdoor.
+
+---
+
+## background.js — Service Worker
+
+Handles API calls on behalf of popup (avoids popup CSP restrictions):
+
+| Action | API call |
+|--------|---------|
+| `fetchLastResume` | `GET /api/MasterResume/latest` → returns `{ resumeText, resumeTitle, source }` |
+| `checkAts` | `POST /api/Ats/check` → returns `{ atsScore }` |
+| `saveJob` | `POST /api/JobTracker` → returns `{ success }` or `{ limitReached: true }` |
+
+---
+
+## manifest.json
+
+- Manifest V3
+- Permissions: `storage`, `tabs`, `scripting`, `activeTab`
+- Host permissions: `https://ironcv-api-y89t.onrender.com/*`, `https://ironcv.com/*`
+- Content scripts injected on LinkedIn, Indeed, Glassdoor
+
+---
+
+## Installation (Dev)
+
+1. Go to `chrome://extensions/`
+2. Enable **Developer mode**
+3. Click **Load unpacked** → select this folder
+4. Extension loads immediately
+
+---
+
+## Publishing (Chrome Web Store)
+
+1. Zip the extension folder (exclude `store-screenshots/`, `.git/`)
+2. Upload to [Chrome Developer Dashboard](https://chrome.google.com/webstore/devconsole)
+3. Current version: `2.1.1` — bump `manifest.json` version on each release
+
+---
+
+## Known Limitations
+
+- ATS check requires a Master Resume uploaded on ironcv.com
+- LinkedIn job collections page requires `currentJobId` param in URL
+- Glassdoor scraping may fail on dynamically rendered pages (retry logic in content.js)
+- Extension token syncs from `chrome.storage.sync` — user must be signed in on ironcv.com first
+
+---
+
+## Last Updated
+
+**March 2026** — Added plan badge + usage limit pills to popup header. Limit-reached inline messages for ATS + Job Tracker. Aligned with Free/Pro/Hunter pricing restructure.
