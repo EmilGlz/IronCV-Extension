@@ -1,0 +1,70 @@
+name: Publish to Chrome Web Store
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'   # Triggered by: git tag v2.2.0 && git push --tags
+
+jobs:
+  publish:
+    name: Build & Publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        run: |
+          TAG=${GITHUB_REF#refs/tags/v}
+          echo "RELEASE_VERSION=$TAG" >> $GITHUB_ENV
+          echo "Publishing version: $TAG"
+
+      - name: Validate manifest version matches tag
+        run: |
+          MANIFEST_VERSION=$(node -e "const m=require('./manifest.json'); console.log(m.version)")
+          echo "Manifest version: $MANIFEST_VERSION"
+          echo "Tag version: $RELEASE_VERSION"
+          if [ "$MANIFEST_VERSION" != "$RELEASE_VERSION" ]; then
+            echo "❌ Version mismatch! manifest.json=$MANIFEST_VERSION, tag=v$RELEASE_VERSION"
+            echo "Update manifest.json version before tagging."
+            exit 1
+          fi
+          echo "✅ Versions match"
+
+      - name: Build extension zip
+        run: |
+          ZIP_NAME="ironcv-extension-v${{ env.RELEASE_VERSION }}.zip"
+          zip -r "$ZIP_NAME" \
+            manifest.json \
+            popup.html popup.js \
+            content.js background.js \
+            icons/ \
+            --exclude "*.git*" \
+            --exclude "*store-screenshots*" \
+            --exclude "*.zip"
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          ls -lh "$ZIP_NAME"
+
+      - name: Upload to Chrome Web Store
+        uses: mnao305/chrome-extension-upload@v5.0.0
+        with:
+          file-path: ${{ env.ZIP_NAME }}
+          extension-id: ${{ secrets.CHROME_EXTENSION_ID }}
+          client-id: ${{ secrets.CHROME_CLIENT_ID }}
+          client-secret: ${{ secrets.CHROME_CLIENT_SECRET }}
+          refresh-token: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          publish: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: IronCV Extension v${{ env.RELEASE_VERSION }}
+          body: |
+            ## IronCV Chrome Extension v${{ env.RELEASE_VERSION }}
+
+            Published to Chrome Web Store automatically.
+          files: ${{ env.ZIP_NAME }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

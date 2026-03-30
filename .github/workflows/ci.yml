@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Validate & Package Extension
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate manifest.json
+        run: |
+          echo "Validating manifest.json..."
+          node -e "
+            const fs = require('fs');
+            const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+            const required = ['manifest_version', 'name', 'version', 'description'];
+            required.forEach(key => {
+              if (!manifest[key]) throw new Error('Missing required field: ' + key);
+            });
+            if (manifest.manifest_version !== 3) throw new Error('Must be Manifest V3');
+            console.log('✅ manifest.json valid — v' + manifest.version);
+          "
+
+      - name: Check required files exist
+        run: |
+          for f in popup.html popup.js content.js background.js manifest.json; do
+            [ -f "$f" ] && echo "✅ $f" || (echo "❌ Missing: $f" && exit 1)
+          done
+
+      - name: Build extension zip
+        run: |
+          VERSION=$(node -e "const m=require('./manifest.json'); console.log(m.version)")
+          ZIP_NAME="ironcv-extension-v${VERSION}.zip"
+          echo "Building $ZIP_NAME..."
+          zip -r "$ZIP_NAME" \
+            manifest.json \
+            popup.html popup.js \
+            content.js background.js \
+            icons/ \
+            --exclude "*.git*" \
+            --exclude "*store-screenshots*" \
+            --exclude "*.zip"
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          ls -lh "$ZIP_NAME"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-${{ env.VERSION }}
+          path: ${{ env.ZIP_NAME }}
+          retention-days: 30
